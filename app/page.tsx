@@ -15,7 +15,7 @@ export default function Home() {
     <div className="site-shell">
       <header className="header">
         <a href="#inicio" className="brand" aria-label="Futebol Competitivo — início"><span className="brand-mark">FC<span>✦</span></span><span>FUTEBOL<strong>COMPETITIVO</strong></span></a>
-        <nav aria-label="Navegação principal"><a href="#jogos">Os jogos</a><a href="#como-funciona">Como funciona</a></nav>
+
         <Link className="header-cta" href="/campeonatos">Acessar arena <span aria-hidden="true">↗</span></Link>
       </header>
 
@@ -31,17 +31,9 @@ export default function Home() {
           </div>
 
           <div className="goal-wrap"><span className="goal-caption"><span /> PRESSIONE START NA SUA COMPETIÇÃO <span /></span><Link className="goal-button" href="/campeonatos/novo"><span className="goal-net" aria-hidden="true" /><span className="goal-label"><span className="play-icon" aria-hidden="true">▶</span> Criar campeonato <span aria-hidden="true">↗</span></span></Link><span className="goal-floor" aria-hidden="true" /><p>Da resenha entre amigos à disputa pelo título.</p></div>
-          <div className="hero-bottom"><span>DO SOFÁ PARA O HALL DA FAMA.</span><a href="#jogos">CONHEÇA A ARENA <span aria-hidden="true">↓</span></a><span>SEU CONTROLE. SUAS REGRAS.</span></div>
+          <div className="hero-bottom"><span>DO SOFÁ PARA O HALL DA FAMA.</span><Link href="/campeonatos">ACESSE A ARENA <span aria-hidden="true">↗</span></Link><span>SEU CONTROLE. SUAS REGRAS.</span></div>
         </section>
 
-        <section id="jogos" className="games-section" aria-labelledby="games-title"><div className="section-top"><div><p className="eyebrow">DOIS JOGOS. A MESMA FOME DE VENCER.</p><h2 id="games-title">Escolha seu lado.<br /><span>Reúna seus rivais.</span></h2></div><p>Tem espaço para o toque de bola do PES e para a emoção do FIFA. Aqui, o que conecta os jogadores é a vontade de competir.</p></div>
-          <div className="game-cards">
-            <article className="game-card pes-card"><div className="card-top"><span>01 / PRO EVOLUTION SOCCER</span><Controller /></div><h3>PES<span>O clássico nunca sai de jogo.</span></h3><p>Chame quem domina o passe, quem vive de contra-ataque e aquele amigo que sempre pede revanche.</p><Link href="/campeonatos/novo?jogo=PES">Criar campeonato <span aria-hidden="true">↗</span></Link><span className="card-watermark" aria-hidden="true">PES</span></article>
-            <article className="game-card fifa-card"><div className="card-top"><span>02 / FIFA</span><Controller /></div><h3>FIFA<span>Cada partida, uma nova história.</span></h3><p>Dos dribles improváveis ao gol no último minuto. Reúna os jogadores e dê um título a essa rivalidade.</p><Link href="/campeonatos/novo?jogo=FIFA">Criar campeonato <span aria-hidden="true">↗</span></Link><span className="card-watermark" aria-hidden="true">FIFA</span></article>
-          </div>
-        </section>
-
-        <section id="como-funciona" className="how-section" aria-labelledby="how-title"><div className="how-heading"><p className="eyebrow">DO LOBBY À GRANDE FINAL</p><h2 id="how-title">A próxima rivalidade<br />começa com você.</h2></div><div className="steps"><article><span>01</span><h3>Escolha o jogo.</h3><p>PES ou FIFA? Defina o palco da sua próxima disputa.</p></article><article><span>02</span><h3>Prepare o campeonato.</h3><p>Dê um nome à competição e escolha o formato.</p></article><article><span>03</span><h3>Convoque a galera.</h3><p>Junte os jogadores. Toda boa rivalidade começa com um convite.</p></article></div></section>
       </main>
       <footer><a href="#inicio" className="footer-brand">FC <span>FUTEBOL COMPETITIVO</span></a><p>Feito para quem leva a resenha e o jogo a sério.</p><a href="#inicio">VOLTAR AO TOPO ↑</a><small>Projeto independente, sem vínculo oficial com as marcas dos jogos.</small></footer>
 
@@ -49,6 +41,8 @@ export default function Home() {
     </div>
   );
 }
+
+
 
 
 
