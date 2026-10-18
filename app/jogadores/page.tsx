@@ -1,5 +1,6 @@
-import ResourceList from "../components/resource-list";
+import type { Metadata } from "next";
+import PlayersManager from "./players-manager";
 
-export default function PlayersPage() {
-  return <ResourceList resource="jogadores" title="Jogador" description="Os jogadores que fazem parte da sua arena." />;
-}
+export const metadata: Metadata = { title: "Jogadores | Futebol Competitivo" };
+
+export default function PlayersPage() { return <PlayersManager />; }

@@ -1,0 +1,19 @@
+.primary, .secondary, .danger, .deactivate { padding: 11px 16px; border-radius: 5px; font: inherit; font-size: 12px; cursor: pointer; }
+.primary { border: 1px solid #f2cd8260; background: #f2cd8212; color: #f2cd82; }
+.secondary { border: 1px solid #ffffff25; background: transparent; color: #e6ebf6; }
+.danger { border: 1px solid #ff7d9150; background: #ff7d9115; color: #ffadbb; }
+.deactivate { border: 0; background: transparent; color: #ffadbb; }
+.primary:hover, .secondary:hover { background: #ffffff08; }.danger:hover, .deactivate:hover { background: #ff7d9120; }
+.primary:disabled, .secondary:disabled, .danger:disabled, .close:disabled { opacity: .45; cursor: not-allowed; }
+.card { padding: 24px; border: 1px solid #ffffff18; border-radius: 8px; background: #101727; overflow-wrap: anywhere; }
+.card h2 { font-size: 22px; margin: 16px 0 10px; }.card p { color: #959fb7; font-size: 12px; line-height: 1.7; }
+.active { color: #67e5ed; font-size: 10px; }.cardActions { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid #ffffff15; margin-top: 20px; padding-top: 16px; }
+.dialog { position: fixed; inset: 0; margin: auto; width: min(460px, calc(100% - 32px)); max-height: 90dvh; overflow: auto; border: 1px solid #f2cd8240; border-radius: 10px; padding: 38px 28px 28px; color: #eff2fa; background: #101727; }
+.dialog::backdrop { background: #030611bf; backdrop-filter: blur(6px); }.dialog h2 { font-size: 28px; margin-bottom: 20px; }
+.close { position: absolute; right: 14px; top: 8px; font-size: 28px; border: 0; background: transparent; color: #eff2fa; }
+.fields { border: 0; padding: 0; margin: 0; }.fields label { display: block; font-size: 12px; margin: 20px 0 8px; }.fields label > span { color: #f2cd82; }.fields label .optional { color: #959fb7; }
+.fields input { width: 100%; padding: 12px; color: #eff2fa; background: #080c19; border: 1px solid #65718d; border-radius: 4px; font: inherit; font-size: 13px; }.fields input:focus-visible { outline: 2px solid #f2cd82; outline-offset: 2px; }
+.description { color: #a9b5cb; line-height: 1.9; font-size: 12px; }.description strong { color: #eff2fa; }
+.dialogActions { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 26px; }
+.error { padding: 14px; margin: 18px 0; border: 1px solid #ff7d9140; border-radius: 5px; color: #ffb5c0; background: #ff7d910c; font-size: 12px; line-height: 1.8; }
+.notice { border: 1px solid #67e5ed35; border-radius: 5px; padding: 14px; margin-bottom: 24px; color: #b8edf0; background: #67e5ed08; font-size: 12px; }
