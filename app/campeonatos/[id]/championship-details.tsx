@@ -43,7 +43,7 @@ export default function ChampionshipDetails() {
     <Link href="/campeonatos" className="back-link">← Voltar aos campeonatos</Link>
     <div className="detail-heading"><div><p className="eyebrow">CAMPEONATO #{championship.id} / AGENDA</p><h1>{championship.organizacao.nome}</h1><p>Edição {championship.edicao} · {count} participantes <span className="resource-status championship-status" data-status={championship.status}>{statusNames[championship.status]}</span></p></div></div>
     {notice && <p role="status" className="organization-notice">{notice}</p>}
-    <ChampionshipSchedule key={championship.id} phases={championship.fases || []} participants={championship.participantes} championshipId={championship.id} classifications={championship.classificacaoPorRodada} editable={championship.status === "EM_ANDAMENTO"} onUpdated={(updated) => { setChampionship(updated); setNotice("Agenda atualizada com sucesso."); }} />
+    <ChampionshipSchedule key={`${championship.id}-${championship.status}`} phases={championship.fases || []} participants={championship.participantes} championshipId={championship.id} classifications={championship.classificacaoPorRodada} editable={championship.status === "EM_ANDAMENTO"} onUpdated={(updated) => { setChampionship(updated); setNotice("Agenda atualizada com sucesso."); }} />
     <details className="schedule-participants"><summary>Ver participantes ({count})</summary><div className="selected-participants">{championship.participantes.map((participant) => <article key={participant.id} className="selected-participant"><strong>{participant.jogador.apelido || participant.jogador.nome}</strong><small>{participant.equipe.nome}</small></article>)}</div></details>
   </main>;
 
