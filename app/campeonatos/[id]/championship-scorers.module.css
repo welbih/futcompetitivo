@@ -1,0 +1,20 @@
+.card { width: 100%; max-width: 560px; margin: 0 auto; overflow: hidden; border: 1px solid #ffffff20; border-radius: 9px; background: #101727; color: #eff2fa; }
+.header { padding: 25px 20px; text-align: center; border-bottom: 1px solid #ffffff18; background: #162134; }
+.header p { margin: 0 0 12px; font-size: 8px; letter-spacing: 1.8px; color: #f2cd82; }
+.header h3 { margin: 0 0 10px; font-size: 21px; font-weight: 600; }
+.header > span { font-size: 11px; color: #a9b5cb; }
+.list { list-style: none; padding: 0; margin: 0; }
+.row { display: grid; grid-template-columns: 50px minmax(0, 1fr) 60px; gap: 16px; align-items: center; padding: 18px 22px; border-bottom: 1px solid #ffffff10; }
+.row:first-child { background: #f2cd8206; }
+.position { color: #a9b5cb; font-size: 17px; font-weight: 600; }
+.row:first-child .position { color: #f2cd82; }
+.goals { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.goals strong { font-size: 25px; color: #f2cd82; font-weight: 700; }
+.goals > span { font-size: 10px; color: #a9b5cb; }
+.note, .empty { margin: 0; padding: 16px 20px; color: #a9b5cb; font-size: 11px; line-height: 1.8; text-align: center; }
+@media (max-width: 600px) { .row { padding: 16px 12px; gap: 8px; grid-template-columns: 35px minmax(0, 1fr) 45px; }.header h3 { font-size: 18px; } }
+
+.row.champion { border-top: 1px solid #f2cd8270; border-bottom: 1px solid #f2cd8270; background: linear-gradient(105deg, #9f6e151c 0%, #f2cd8238 35%, #ffe3a54a 50%, #f2cd8238 65%, #9f6e151c 100%); background-size: 250% 100%; box-shadow: inset 4px 0 0 #f2cd82; animation: championShimmer 5s ease-in-out infinite; }
+.champion .position, .champion .goals strong { color: #ffe3a5; font-weight: 800; }
+@keyframes championShimmer { 0%, 100% { background-position: 100% 50%; } 50% { background-position: 0% 50%; } }
+@media (prefers-reduced-motion: reduce) { .row.champion { animation: none; } }
