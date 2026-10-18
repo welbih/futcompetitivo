@@ -13,12 +13,16 @@ type Props = {
 export default function OrganizationDialog({ open, onClose, onCreated }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const form = useRef<HTMLFormElement>(null);
+  const nameInput = useRef<HTMLInputElement>(null);
   const submitting = useRef(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (open && !dialog.current?.open) dialog.current?.showModal();
+    if (open && !dialog.current?.open) {
+      dialog.current?.showModal();
+      nameInput.current?.focus();
+    }
     if (!open && dialog.current?.open) dialog.current?.close();
   }, [open]);
 
@@ -48,10 +52,11 @@ export default function OrganizationDialog({ open, onClose, onCreated }: Props) 
       finally { submitting.current = false; setPending(false); }
     }}>
       <label htmlFor="organization-name">Nome da organização</label>
-      <input id="organization-name" name="nome" placeholder="Ex.: Liga dos Amigos" required maxLength={255} pattern=".*\S.*" disabled={pending} autoFocus />
+      <input ref={nameInput} id="organization-name" name="nome" placeholder="Ex.: Liga dos Amigos" required maxLength={255} pattern=".*\S.*" disabled={pending} autoFocus />
       {error && <p role="alert" className="form-error">{error}</p>}
       <div className="organization-dialog-actions"><button type="button" className="retry-button" disabled={pending} onClick={() => dialog.current?.close()}>Cancelar</button><button type="submit" className="form-submit" disabled={pending}>{pending ? "Salvando…" : "Salvar organização ↗"}</button></div>
       {pending && <p role="status">Cadastrando organização…</p>}
     </form>
   </dialog>;
 }
+

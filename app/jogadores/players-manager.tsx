@@ -47,7 +47,7 @@ function PlayerDialog({ action, onClose, onSaved, onDeactivated }: { action: Act
       } catch (cause) { setError(cause instanceof Error ? cause.message : "Não foi possível confirmar a operação. Atualize a listagem antes de tentar novamente."); }
       finally { lock.current = false; setPending(false); }
     }}>
-      {deactivate ? <p className={styles.description}>Deseja inativar <strong>{player?.apelido || player?.nome}</strong>? Ele deixará de aparecer nos cadastros ativos e não poderá ser incluído em novos campeonatos. O histórico será preservado.</p> : <fieldset disabled={pending} className={styles.fields}>
+      {deactivate ? <p className={styles.description}>Deseja inativar <strong>{player?.apelido || player?.nome}</strong>? Ele permanecerá na listagem como inativo e não poderá ser incluído em novos campeonatos. O histórico será preservado.</p> : <fieldset disabled={pending} className={styles.fields}>
         <label htmlFor="player-name">Nome <span>*</span></label><input id="player-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Nome do jogador" required maxLength={255} pattern=".*\S.*" autoFocus />
         <label htmlFor="player-nickname">Apelido <span className={styles.optional}>(opcional)</span></label><input id="player-nickname" value={nickname} onChange={(event) => setNickname(event.target.value)} placeholder="Como ele é conhecido na arena" maxLength={255} />
       </fieldset>}
@@ -65,12 +65,26 @@ export default function PlayersManager() {
   const [notice, setNotice] = useState("");
   const [action, setAction] = useState<Action | null>(null);
   const [reload, setReload] = useState(0);
+  const [activatingId, setActivatingId] = useState<number | null>(null);
+  const activationLock = useRef(false);
+
+  async function activatePlayer(player: Player) {
+    if (activationLock.current) return;
+    activationLock.current = true; setActivatingId(player.id); setError(""); setNotice("");
+    try {
+      const result = await readResponse(await fetch(`/api/jogadores/${player.id}/ativar`, { method: "PUT" }));
+      if (!result || result.id !== player.id || result.ativo !== true) throw new Error("A API não confirmou a ativação. Atualize a listagem antes de tentar novamente.");
+      setPlayers((previous) => previous.map((item) => item.id === player.id ? result : item));
+      setNotice("Jogador ativado com sucesso.");
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Não foi possível confirmar a ativação. Atualize a listagem."); }
+    finally { activationLock.current = false; setActivatingId(null); }
+  }
 
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/jogadores", { signal: controller.signal }).then(readResponse).then((data) => {
       if (!Array.isArray(data)) throw new Error("A API retornou uma listagem inválida.");
-      if (!controller.signal.aborted) setPlayers(data.filter((player: Player) => player.ativo));
+      if (!controller.signal.aborted) setPlayers(data);
     }).catch((cause: unknown) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Não foi possível carregar os jogadores."); }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [reload]);
@@ -79,11 +93,13 @@ export default function PlayersManager() {
     {notice && <p role="status" className={styles.notice}>{notice}</p>}
     {loading && <p role="status" className="form-note">Carregando jogadores…</p>}
     {error && <div role="alert" className={styles.error}><p>{error}</p><button type="button" className={styles.secondary} onClick={() => { setLoading(true); setError(""); setReload((value) => value + 1); }}>Atualizar listagem</button></div>}
-    {!loading && !error && !players.length && <p className="resource-empty">Nenhum jogador ativo. Clique em Novo jogador para começar.</p>}
-    <div className="resource-grid">{players.map((player) => <article key={player.id} className={styles.card}><span className="eyebrow">#{player.id}</span><h2>{player.apelido?.trim() || player.nome}</h2>{player.apelido && <p>{player.nome}</p>}<span className={styles.active}>Ativo</span><div className={styles.cardActions}><button type="button" className={styles.secondary} aria-label={`Editar ${player.apelido || player.nome}`} onClick={() => { setNotice(""); setAction({ kind: "edit", player }); }}>Editar</button><button type="button" className={styles.deactivate} aria-label={`Inativar ${player.apelido || player.nome}`} onClick={() => { setNotice(""); setAction({ kind: "deactivate", player }); }}>Inativar</button></div></article>)}</div>
+    {!loading && !error && !players.length && <p className="resource-empty">Nenhum jogador cadastrado. Clique em Novo jogador para começar.</p>}
+    <div className="resource-grid">{players.map((player) => <article key={player.id} className={styles.card}><span className="eyebrow">#{player.id}</span><h2>{player.apelido?.trim() || player.nome}</h2>{player.apelido && <p>{player.nome}</p>}<span className={player.ativo ? styles.active : styles.inactive}>{player.ativo ? "Ativo" : "Inativo"}</span><div className={styles.cardActions}>{player.ativo ? <><button type="button" className={styles.secondary} disabled={activatingId !== null} aria-label={`Editar ${player.apelido || player.nome}`} onClick={() => { setNotice(""); setAction({ kind: "edit", player }); }}>Editar</button><button type="button" className={styles.deactivate} disabled={activatingId !== null} aria-label={`Inativar ${player.apelido || player.nome}`} onClick={() => { setNotice(""); setAction({ kind: "deactivate", player }); }}>Inativar</button></> : <button type="button" className={styles.primary} disabled={activatingId !== null} aria-label={`Ativar ${player.apelido || player.nome}`} onClick={() => activatePlayer(player)}>{activatingId === player.id ? "Ativando…" : "Ativar"}</button>}</div></article>)}</div>
     {action && <PlayerDialog key={action.kind === "create" ? "create" : `${action.kind}-${action.player.id}`} action={action} onClose={() => setAction(null)} onSaved={(player) => {
-      setPlayers((previous) => [...previous.filter((item) => item.id !== player.id), player].filter((item) => item.ativo).sort((a, b) => a.id - b.id));
+      setPlayers((previous) => [...previous.filter((item) => item.id !== player.id), player].sort((a, b) => a.id - b.id));
       setNotice(action.kind === "create" ? "Jogador criado com sucesso." : "Jogador atualizado com sucesso.");
-    }} onDeactivated={(id) => { setPlayers((previous) => previous.filter((player) => player.id !== id)); setNotice("Jogador inativado com sucesso."); }} />}
+    }} onDeactivated={(id) => { setPlayers((previous) => previous.map((player) => player.id === id ? { ...player, ativo: false } : player)); setNotice("Jogador inativado com sucesso."); }} />}
   </main>;
 }
+
+

@@ -1,5 +1,6 @@
-import ResourceList from "../components/resource-list";
+import type { Metadata } from "next";
+import TeamsManager from "./teams-manager";
 
-export default function TeamsPage() {
-  return <ResourceList resource="equipes" title="Equipe" description="As equipes que entram em campo nas suas disputas." />;
-}
+export const metadata: Metadata = { title: "Equipes | Futebol Competitivo" };
+
+export default function TeamsPage() { return <TeamsManager />; }

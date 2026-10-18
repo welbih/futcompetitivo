@@ -17,3 +17,7 @@
 .dialogActions { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 26px; }
 .error { padding: 14px; margin: 18px 0; border: 1px solid #ff7d9140; border-radius: 5px; color: #ffb5c0; background: #ff7d910c; font-size: 12px; line-height: 1.8; }
 .notice { border: 1px solid #67e5ed35; border-radius: 5px; padding: 14px; margin-bottom: 24px; color: #b8edf0; background: #67e5ed08; font-size: 12px; }
+
+.inactive { display: inline-block; color: #a7afbf; border: 1px solid #ffffff20; border-radius: 4px; padding: 3px 7px; font-size: 10px; }
+.deactivate:disabled { opacity: .4; cursor: not-allowed; }
+.deactivate:disabled:hover { background: transparent; }
