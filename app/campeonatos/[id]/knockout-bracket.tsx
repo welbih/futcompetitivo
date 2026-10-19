@@ -4,6 +4,8 @@ import { useState } from "react";
 import Image from "next/image";
 import type { Championship, Participant } from "../novo/championship-form";
 import type { KnockoutTie, SchedulePhase } from "./championship-schedule";
+import ChampionshipScorers from "./championship-scorers";
+import { topScorers } from "./provisional-standings";
 import MatchResultDialog from "./match-result-dialog";
 import styles from "./knockout-bracket.module.css";
 
@@ -21,12 +23,17 @@ function Logo({ participant }: { participant: Participant }) {
   return <span className={styles.logo}>{url && failed !== url && (/^https?:\/\//i.test(url) || /^\/(?!\/)/.test(url)) ? <Image src={url} alt={participant.equipe.nome} width={28} height={28} unoptimized onError={() => setFailed(url)} /> : participant.equipe.nome.slice(0, 2).toUpperCase()}</span>;
 }
 export default function KnockoutBracket({ championship, onUpdated }: { championship: Championship; onUpdated: (updated: Championship) => void }) {
+  const [view, setView] = useState<"bracket" | "scorers">("bracket");
   const [selected, setSelected] = useState<Match | null>(null);
   const phases = championship.fases?.filter(phase => phase.tipo === "ELIMINATORIA") || [];
+  const allRounds = phases.flatMap(phase => phase.rodadas);
+  const final = championship.status === "FINALIZADO";
+  const leaders = topScorers(allRounds, championship.participantes).filter(row => row.position === 1 && row.goalsFor > 0);
   const editable = championship.status === "EM_ANDAMENTO";
   return <section aria-labelledby="knockout-title" className={styles.panel}>
-    <div className="schedule-view-options" role="group" aria-label="Visualização do campeonato"><button type="button" aria-pressed="true">Mata a mata</button></div>
-    <header className={styles.heading}><div><p className="eyebrow">O CAMINHO ATÉ A TAÇA</p><h2 id="knockout-title">Mata a mata</h2><p>Jogo único · Cada vitória aproxima você do título</p></div><span className={styles.badge}>ELIMINATÓRIO</span></header>
+    <div className="schedule-view-options" role="group" aria-label="Visualização do campeonato"><button type="button" aria-pressed={view === "bracket"} onClick={() => setView("bracket")}>Mata a mata</button><button type="button" aria-pressed={view === "scorers"} onClick={() => setView("scorers")}>Artilheiro</button></div>
+    <header className={styles.heading}><div><p className="eyebrow">O CAMINHO ATÉ A TAÇA</p><h2 id="knockout-title">{view === "bracket" ? "Mata a mata" : "Artilheiro"}</h2><p>{view === "bracket" ? "Jogo único · Cada vitória aproxima você do título" : "Os jogadores que mais balançaram a rede"}</p></div><span className={styles.badge}>ELIMINATÓRIO</span></header>
+    {view === "scorers" ? <ChampionshipScorers rounds={allRounds} participants={championship.participantes} final={final} /> : <>
     <p className={styles.hint}>{editable ? "Selecione uma partida da etapa em andamento para registrar o placar. A próxima etapa é liberada ao concluir todos os jogos." : "Campeonato finalizado. Confira o caminho do campeão."} Arraste a barra horizontal para explorar o chaveamento.</p>
     {phases.map(phase => {
       const rounds = [...phase.rodadas].sort((a,b) => a.numero-b.numero);
@@ -73,6 +80,7 @@ export default function KnockoutBracket({ championship, onUpdated }: { champions
       const champion = !editable ? winner(finalTie?.partidas[0]) : null;
       return <div key={phase.id}>
         {champion && <div className={styles.champion}><span aria-hidden="true">★</span><Logo participant={champion}/><div><small>CAMPEÃO DO CAMPEONATO</small><strong>{champion.jogador.apelido || champion.jogador.nome}</strong></div></div>}
+        {champion && final && leaders.map(row => <div key={row.participant.id} className={`${styles.champion} ${styles.scorer}`}><span aria-hidden="true">⚽</span><Logo participant={row.participant}/><div><small>ARTILHEIRO DO CAMPEONATO</small><strong>{row.participant.jogador.apelido || row.participant.jogador.nome}</strong><span>{row.goalsFor} {row.goalsFor === 1 ? "gol" : "gols"}</span></div></div>)}
         {!ties.length ? <p className="form-note">Chaveamento indisponível. Atualize o campeonato para carregar os confrontos.</p> : <div className={styles.scroll} tabIndex={0} role="region" aria-label="Chaveamento completo do campeonato"><div className={styles.bracket} style={{width,height}}>
           <svg width={width} height={height} className={styles.lines} aria-hidden="true">{visibleTies.flatMap(tie=>[tie.origemUmId,tie.origemDoisId].map(id=> {
             if (id == null || !visibleIds.has(id)) return null;
@@ -105,6 +113,7 @@ export default function KnockoutBracket({ championship, onUpdated }: { champions
         </div></div>}
       </div>;
     })}
+    </>}
     {selected && <MatchResultDialog key={selected.id} championshipId={championship.id} match={selected} knockout onClose={()=>setSelected(null)} onSaved={onUpdated}/>}
   </section>;
 }

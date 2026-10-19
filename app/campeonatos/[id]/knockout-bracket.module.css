@@ -29,4 +29,7 @@
 .champion small,.champion strong { display:block; }
 .champion small { font-size:9px; letter-spacing:2px; margin-bottom:7px; }
 .champion strong { font-size:22px; }
+.scorer { border-color:#67e5ed50; background:linear-gradient(110deg,#67e5ed08,#67e5ed18,#67e5ed08); color:var(--cyan); }
+.scorer strong { margin-bottom:6px; }
+.scorer div > span { font-size:14px; color:var(--text); }
 @media(max-width:600px) { .heading { align-items:flex-start; }.badge { display:none; }.hint { font-size:12px; } }
