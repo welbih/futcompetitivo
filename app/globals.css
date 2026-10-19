@@ -270,6 +270,8 @@ footer { border-top: 1px solid var(--line); margin: 0 6%; padding: 30px 0; displ
 .match-result-button:disabled { cursor: default; }
 .score-fields { border: 0; margin: 25px 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr); gap: 14px; align-items: end; }
 .score-fields label { text-align: center; overflow-wrap: anywhere; }
+.penalty-score-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.penalty-score-fields > div { min-width: 0; }
 .score-fields label strong { font-size: 13px; display: block; }
 .score-fields label span { color: var(--muted); display: block; font-size: 10px; margin-top: 6px; }
 .score-fields > span { text-align: center; margin-bottom: 17px; color: var(--gold); font-size: 23px; }
