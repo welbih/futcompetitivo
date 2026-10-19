@@ -36,6 +36,15 @@ export default function KnockoutBracket({ championship, onUpdated }: { champions
       const automatic = (tie: KnockoutTie) => !tie.origemUmId && !tie.origemDoisId && !tie.partidas.length && (!!tie.participanteUmId !== !!tie.participanteDoisId);
       const visibleTies = ties.filter(tie => !automatic(tie));
       const visibleIds = new Set(visibleTies.map(tie => tie.id));
+      const labels = new Map<number, string>();
+      groups.forEach((group, stage) => {
+        const visible = group.filter(tie => !automatic(tie));
+        visible.forEach((tie, index) => {
+          const name = tie.etapa?.nome || rounds[stage]?.etapa?.nome || (group.length === 1 ? "Final" : `Etapa ${stage+1}`);
+          const shortName = ({ "Quartas de final": "Quartas", "Semifinal": "Semi", "Oitavas de final": "Oitavas", "Fase preliminar": "Preliminar" } as Record<string, string>)[name] || name;
+          labels.set(tie.id, group.length === 1 ? shortName : `${shortName} ${index+1}`);
+        });
+      });
       const tiesById = new Map(ties.map(tie => [tie.id, tie]));
       const resolvedParticipant = (id: number | null, origin: number | null) => {
         if (id != null) return id;
@@ -79,13 +88,13 @@ export default function KnockoutBracket({ championship, onUpdated }: { champions
             const sides=[resolvedParticipant(tie.participanteUmId, tie.origemUmId),resolvedParticipant(tie.participanteDoisId, tie.origemDoisId)];
             return <div key={tie.id}>
               {!group.slice(0,index).some(previous => visibleIds.has(previous.id) && positions.get(previous.id)?.x === point.x) && <h3 className={styles.stage} style={{left:point.x,top:22}}>{tie.etapa?.nome || round.etapa?.nome || (group.length===1?"Final":`Etapa ${stage+1}`)}</h3>}
-              <button type="button" className={styles.match} style={{left:point.x,top:point.y}} disabled={!playable} onClick={()=>{if(playable)setSelected(match)}} aria-label={`${tie.etapa?.nome || "Confronto"} ${tie.id}${playable?": adicionar ou editar placar":""}`} data-final={group.length===1}>
-                <span className={styles.meta}><span>CONFRONTO #{tie.id}</span><span>{match?.status === "FINALIZADA" ? "Finalizado" : playable ? "Em disputa" : !tie.origemUmId && !tie.participanteDoisId ? "Classificado" : "A definir"}</span></span>
+              <button type="button" className={styles.match} style={{left:point.x,top:point.y}} disabled={!playable} onClick={()=>{if(playable)setSelected(match)}} aria-label={`${labels.get(tie.id)}${playable?": adicionar ou editar placar":""}`} data-final={group.length===1}>
+                <span className={styles.meta}><span>{labels.get(tie.id)}</span><span>{match?.status === "FINALIZADA" ? "Finalizado" : playable ? "Em disputa" : !tie.origemUmId && !tie.participanteDoisId ? "Classificado" : "A definir"}</span></span>
                 {sides.map((id,side)=> {
                   const participant=championship.participantes.find(p=>p.id===id);
                   const origin=side===0?tie.origemUmId:tie.origemDoisId;
                   return <span key={side} className={styles.player} data-winner={participant && victorious?.id===participant.id}>
-                    {participant?<><Logo participant={participant}/><span className={styles.name}>{participant.jogador.apelido || participant.jogador.nome}</span></>:<span className={styles.placeholder}>{origin?`Vencedor do confronto #${origin}`:"Avanço automático"}</span>}
+                    {participant?<><Logo participant={participant}/><span className={styles.name}>{participant.jogador.apelido || participant.jogador.nome}</span></>:<span className={styles.placeholder}>{origin?`Vencedor de ${labels.get(origin) || "etapa anterior"}`:"Avanço automático"}</span>}
                     <b>{match?.resultado ? side===0?match.resultado.golsMandante:match.resultado.golsVisitante : "–"}</b>
                     {match?.resultado?.penaltisMandante != null && <small title="Pênaltis">({side===0?match.resultado.penaltisMandante:match.resultado.penaltisVisitante})</small>}
                   </span>;
