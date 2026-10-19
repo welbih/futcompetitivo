@@ -3,6 +3,7 @@ import { championshipRequest, type ChampionshipContext } from "../../upstream";
 export async function POST(request: Request, { params }: ChampionshipContext) {
   let data;
   try { data = await request.json(); } catch { return Response.json({ detail: "Dados inválidos." }, { status: 400 }); }
+  if (data?.formato === "SWISS") return Response.json({ detail: "O formato Suíço está temporariamente desativado." }, { status: 400 });
   const positive = (value: unknown) => typeof value === "number" && Number.isInteger(value) && value > 0 && value <= 2147483647;
   if (!data || !["LIGA", "LIGA_PARCIAL", "SWISS", "ELIMINATORIO", "MISTA", "GRUPOS"].includes(data.formato) ||
     (["MISTA", "GRUPOS"].includes(data.formato) && (!positive(data.quantidadeClassificados) || data.quantidadeClassificados < 4 || typeof data.turnoEreturno !== "boolean")) ||
