@@ -15,9 +15,11 @@ export type SchedulePhase = {
   id: number;
   ordem: number;
   tipo: string;
+  confrontos?: KnockoutTie[];
   rodadas: {
     id: number;
     numero: number;
+    etapa?: { codigo: string; nome: string };
     status: string;
     folgaParticipanteId: number | null;
     partidas: {
@@ -25,10 +27,12 @@ export type SchedulePhase = {
       mandante: Participant;
       visitante: Participant;
       status: string;
-      resultado: { golsMandante: number; golsVisitante: number } | null;
+      resultado: { golsMandante: number; golsVisitante: number; penaltisMandante?: number | null; penaltisVisitante?: number | null } | null;
     }[];
   }[];
 };
+
+export type KnockoutTie = { id: number; participanteUmId: number | null; participanteDoisId: number | null; origemUmId: number | null; origemDoisId: number | null; tipo: string; partidas: SchedulePhase["rodadas"][number]["partidas"]; etapa?: { codigo: string; nome: string } };
 
 const roundStatus: Record<string, string> = { PENDENTE: "Pendente", EM_ANDAMENTO: "Em andamento", FINALIZADA: "Finalizada" };
 const matchStatus: Record<string, string> = { AGENDADA: "Agendada", EM_ANDAMENTO: "Em andamento", FINALIZADA: "Finalizada" };
