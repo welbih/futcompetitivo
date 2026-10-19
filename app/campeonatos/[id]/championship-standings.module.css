@@ -13,6 +13,13 @@
 .table tbody th { color: #f2f5fb; font-weight: 600; }
 .table tbody th small { display: block; color: #99a8c2; font-size: 11px; font-weight: 400; margin-top: 5px; }
 .position { color: #b5c2d8; font-weight: 600; }
+.qualificationLegend { display:flex; flex-wrap:wrap; gap:10px 20px; padding:14px 20px; font-size:11px; line-height:1.6; color:#a9b5cb; border-bottom:1px solid #ffffff15; }
+.directKey { color:#88e4ad; }
+.preliminaryKey { color:#8ebeff; }
+.table tbody tr[data-qualification="direct"] { background:#38c87516; box-shadow:inset 4px 0 #55d68a; }
+.table tbody tr[data-qualification="preliminary"] { background:#4b92f51c; box-shadow:inset 4px 0 #659ff5; }
+.table tbody tr[data-qualification="direct"] .position { color:#88e4ad; }
+.table tbody tr[data-qualification="preliminary"] .position { color:#8ebeff; }
 .points { color: #f2cd82; font-weight: 800; background: #f2cd8208; }
 .note { font-size: 11px; border-top: 1px solid #ffffff12; }
 @media (max-width: 600px) { .header { padding: 15px 12px; }.header h3 { font-size: 14px; }.description, .note { padding: 14px 12px; }.table th, .table td { padding: 12px 10px; } }

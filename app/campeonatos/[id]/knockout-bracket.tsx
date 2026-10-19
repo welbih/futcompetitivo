@@ -22,16 +22,16 @@ function Logo({ participant }: { participant: Participant }) {
   const [failed, setFailed] = useState<string | null>(null);
   return <span className={styles.logo}>{url && failed !== url && (/^https?:\/\//i.test(url) || /^\/(?!\/)/.test(url)) ? <Image src={url} alt={participant.equipe.nome} width={28} height={28} unoptimized onError={() => setFailed(url)} /> : participant.equipe.nome.slice(0, 2).toUpperCase()}</span>;
 }
-export default function KnockoutBracket({ championship, onUpdated }: { championship: Championship; onUpdated: (updated: Championship) => void }) {
+export default function KnockoutBracket({ championship, onUpdated, embedded = false }: { embedded?: boolean; championship: Championship; onUpdated: (updated: Championship) => void }) {
   const [view, setView] = useState<"bracket" | "scorers">("bracket");
   const [selected, setSelected] = useState<Match | null>(null);
   const phases = championship.fases?.filter(phase => phase.tipo === "ELIMINATORIA") || [];
-  const allRounds = phases.flatMap(phase => phase.rodadas);
+  const allRounds = championship.fases?.flatMap(phase => phase.rodadas) || [];
   const final = championship.status === "FINALIZADO";
   const leaders = topScorers(allRounds, championship.participantes).filter(row => row.position === 1 && row.goalsFor > 0);
   const editable = championship.status === "EM_ANDAMENTO";
   return <section aria-labelledby="knockout-title" className={styles.panel}>
-    <div className="schedule-view-options" role="group" aria-label="Visualização do campeonato"><button type="button" aria-pressed={view === "bracket"} onClick={() => setView("bracket")}>Mata a mata</button><button type="button" aria-pressed={view === "scorers"} onClick={() => setView("scorers")}>Artilheiro</button></div>
+    {!embedded && <div className="schedule-view-options" role="group" aria-label="Visualização do campeonato"><button type="button" aria-pressed={view === "bracket"} onClick={() => setView("bracket")}>Mata a mata</button><button type="button" aria-pressed={view === "scorers"} onClick={() => setView("scorers")}>Artilheiro</button></div>}
     <header className={styles.heading}><div><p className="eyebrow">O CAMINHO ATÉ A TAÇA</p><h2 id="knockout-title">{view === "bracket" ? "Mata a mata" : "Artilheiro"}</h2><p>{view === "bracket" ? "Jogo único · Cada vitória aproxima você do título" : "Os jogadores que mais balançaram a rede"}</p></div><span className={styles.badge}>ELIMINATÓRIO</span></header>
     {view === "scorers" ? <ChampionshipScorers rounds={allRounds} participants={championship.participantes} final={final} /> : <>
     <p className={styles.hint}>{editable ? "Selecione uma partida da etapa em andamento para registrar o placar. A próxima etapa é liberada ao concluir todos os jogos." : "Campeonato finalizado. Confira o caminho do campeão."} Arraste a barra horizontal para explorar o chaveamento.</p>

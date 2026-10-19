@@ -16,6 +16,7 @@ export type SchedulePhase = {
   ordem: number;
   tipo: string;
   confrontos?: KnockoutTie[];
+  quantidadeClassificados?: number | null;
   rodadas: {
     id: number;
     numero: number;
@@ -59,7 +60,7 @@ function completedActiveRound(phases: SchedulePhase[]) {
   const active = [...phases].sort((a, b) => a.ordem - b.ordem).flatMap((phase) => [...phase.rodadas].sort((a, b) => a.numero - b.numero)).find((round) => round.status === "EM_ANDAMENTO");
   return active && active.partidas.length > 0 && active.partidas.every((match) => match.status === "FINALIZADA") ? active.id : null;
 }
-export default function ChampionshipSchedule({ phases, participants, championshipId, editable, onUpdated, classifications }: { phases: SchedulePhase[]; participants: Participant[]; championshipId: number; classifications?: OfficialClassification[]; editable: boolean; onUpdated: (championship: Championship) => void }) {
+export default function ChampionshipSchedule({ phases, participants, championshipId, editable, onUpdated, classifications, leagueStage = false, qualifiedCount }: { leagueStage?: boolean; qualifiedCount?: number; phases: SchedulePhase[]; participants: Participant[]; championshipId: number; classifications?: OfficialClassification[]; editable: boolean; onUpdated: (championship: Championship) => void }) {
   const [selectedMatch, setSelectedMatch] = useState<SchedulePhase["rodadas"][number]["partidas"][number] | null>(null);
   const [view, setView] = useState<"all" | "single" | "single-v2" | "single-v3">("single-v3");
   const [resultsRoundId, setResultsRoundId] = useState<number | null>(() => completedActiveRound(phases));
@@ -110,8 +111,8 @@ export default function ChampionshipSchedule({ phases, participants, championshi
     finally { nextRoundLock.current = false; setOpeningNextRound(false); }
   }
   return <section className="schedule" aria-labelledby="schedule-title">
-    <div className="schedule-heading"><div><p className="eyebrow">DENTRO DE CAMPO</p><h2 id="schedule-title">Agenda do campeonato</h2></div><span>{totalRounds} rodada(s)</span></div>
-    <div className="schedule-controls">
+    <div className="schedule-heading"><div><p className="eyebrow">DENTRO DE CAMPO</p><h2 id="schedule-title">{leagueStage ? "Fase de liga" : "Agenda do campeonato"}</h2></div><span>{totalRounds} rodada(s)</span></div>
+    {!leagueStage && <div className="schedule-controls">
       <div className="schedule-view-options" role="group" aria-label="Visualização da agenda">
         <button type="button" aria-pressed={view === "all"} onClick={() => setView("all")}>Todas as rodadas</button>
         <button type="button" aria-pressed={view === "single"} disabled>Por rodada</button>
@@ -120,6 +121,7 @@ export default function ChampionshipSchedule({ phases, participants, championshi
       </div>
 
     </div>
+    }
     {view !== "all" && editable && !showResults && !showMatrix && !showStandings && !showScorers && <p className="form-note">Clique em uma partida da rodada em andamento para informar o placar.</p>}
     {!totalRounds && <p className="resource-empty">Nenhuma rodada foi gerada para este campeonato.</p>}
     {visiblePhases.map((phase) => <section key={phase.id} className="schedule-phase" aria-label={`Fase ${phase.ordem}`}>
@@ -170,7 +172,7 @@ export default function ChampionshipSchedule({ phases, participants, championshi
         {!roundFinished && <small>Finalize todas as partidas desta rodada para avançar.</small>}
       </div>}
       {showResults && <p className="result-stats-note">Estatísticas acumuladas no campeonato até esta rodada.</p>}
-      {showStandings ? <div className="single-round-grid"><ChampionshipStandings official={classifications?.find((entry) => entry.rodada === current.round.numero)} final={!editable} league={current.phase.tipo === "LIGA"} rounds={rounds.slice(0, currentIndex + 1).map((entry) => entry.round)} participants={participants} /></div> : showScorers ? <div className="single-round-grid"><ChampionshipScorers final={!editable && rounds.length > 0 && currentIndex === rounds.length - 1 && rounds.every((entry) => entry.round.status === "FINALIZADA")} rounds={rounds.slice(0, currentIndex + 1).map((entry) => entry.round)} participants={participants} /></div> : showMatrix ? <div className="single-round-grid"><EncounterMatrix rounds={rounds.slice(0, currentIndex + 1).map((entry) => entry.round)} participants={participants} /></div> : <div className={`rounds-grid${view !== "all" ? " single-round-grid" : ""}`}>{[...phase.rodadas].sort((a, b) => a.numero - b.numero).map((round) => {
+      {showStandings ? <div className="single-round-grid"><ChampionshipStandings official={classifications?.find((entry) => entry.rodada === current.round.numero)} final={!editable && !leagueStage} league={!leagueStage && current.phase.tipo === "LIGA"} qualifiedCount={qualifiedCount} stageComplete={leagueStage && !editable} rounds={rounds.slice(0, currentIndex + 1).map((entry) => entry.round)} participants={participants} /></div> : showScorers ? <div className="single-round-grid"><ChampionshipScorers final={!leagueStage && !editable && rounds.length > 0 && currentIndex === rounds.length - 1 && rounds.every((entry) => entry.round.status === "FINALIZADA")} rounds={rounds.slice(0, currentIndex + 1).map((entry) => entry.round)} participants={participants} /></div> : showMatrix ? <div className="single-round-grid"><EncounterMatrix rounds={rounds.slice(0, currentIndex + 1).map((entry) => entry.round)} participants={participants} /></div> : <div className={`rounds-grid${view !== "all" ? " single-round-grid" : ""}`}>{[...phase.rodadas].sort((a, b) => a.numero - b.numero).map((round) => {
         const bye = participants.find((participant) => participant.id === round.folgaParticipanteId);
         return <article key={round.id} className="round-card"><header className="round-heading"><h3><span>RODADA</span> {String(round.numero).padStart(2, "0")}</h3><span className="round-status" data-status={round.status}>{roundStatus[round.status] || round.status}</span></header>
           <div className="round-matches">{round.partidas.map((match) => <button type="button" key={match.id} className={`schedule-match match-result-button${showResults ? " match-results-view" : ""}`} disabled={view === "all"} aria-disabled={view === "all" || !editable || round.status !== "EM_ANDAMENTO"} aria-describedby={view === "single-v3" && !showResults && match.resultado ? `match-result-${match.id}` : undefined} aria-label={`${match.resultado ? "Editar" : "Adicionar"} placar: ${match.mandante.jogador.apelido || match.mandante.jogador.nome} contra ${match.visitante.jogador.apelido || match.visitante.jogador.nome}`} onClick={() => { if (view !== "all" && editable && round.status === "EM_ANDAMENTO") setSelectedMatch(match); }}><div className="match-meta"><span>PARTIDA #{match.id}</span></div><span className="match-status-badge" data-status={match.status}>{matchStatus[match.status] || match.status}</span><div className="match-teams"><Opponent participant={match.mandante} v3={showResults} v2={view === "single-v2" || view === "single-v3"} /><div className={`match-score${match.resultado && (view !== "single-v3" || showResults) ? " has-result" : ""}`} aria-label={match.resultado && (view !== "single-v3" || showResults) ? `Placar: ${match.resultado.golsMandante} a ${match.resultado.golsVisitante}` : view === "single-v3" ? "Versus" : "Partida sem resultado"}>{match.resultado && (view !== "single-v3" || showResults) ? <><b>{match.resultado.golsMandante}</b><span>:</span><b>{match.resultado.golsVisitante}</b></> : <span>VS</span>}</div><Opponent participant={match.visitante} away v3={showResults} v2={view === "single-v2" || view === "single-v3"} /></div>{view === "single-v3" && !showResults && match.resultado && <span id={`match-result-${match.id}`} role="tooltip" className="match-result-tooltip">Resultado: <strong>{match.resultado.golsMandante} × {match.resultado.golsVisitante}</strong></span>}{showResults && <span className="match-result-stats-footer"><PlayerStats participant={match.mandante} record={records.get(match.mandante.jogador.id)} /><PlayerStats participant={match.visitante} record={records.get(match.visitante.jogador.id)} /></span>}</button>)}</div>
