@@ -33,8 +33,18 @@ export default function KnockoutBracket({ championship, onUpdated }: { champions
       const ties = phase.confrontos || [];
       const groups: KnockoutTie[][] = []; let offset = 0;
       for (let i=0; i<rounds.length; i++) { const count = 2 ** (rounds.length-i-1); groups.push(ties.slice(offset,offset+count)); offset += count; }
+      const automatic = (tie: KnockoutTie) => !tie.origemUmId && !tie.origemDoisId && !tie.partidas.length && (!!tie.participanteUmId !== !!tie.participanteDoisId);
+      const visibleTies = ties.filter(tie => !automatic(tie));
+      const visibleIds = new Set(visibleTies.map(tie => tie.id));
+      const tiesById = new Map(ties.map(tie => [tie.id, tie]));
+      const resolvedParticipant = (id: number | null, origin: number | null) => {
+        if (id != null) return id;
+        const source = origin == null ? undefined : tiesById.get(origin);
+        if (!source) return null;
+        if (automatic(source)) return source.participanteUmId ?? source.participanteDoisId;
+        return winner(source.partidas[0])?.id ?? null;
+      };
       const columns = Math.max(1, rounds.length*2-1);
-      const width = columns*260;
       const height = Math.max(300, (groups[0]?.length || 2)/2*146+100);
       const positions = new Map<number, {x:number;y:number}>();
       groups.forEach((group, stage) => group.forEach((tie, index) => {
@@ -44,23 +54,31 @@ export default function KnockoutBracket({ championship, onUpdated }: { champions
         const y = parents.length ? parents.reduce((n,p)=>n+p.y,0)/parents.length : 80+(index % Math.max(1,group.length/2))*146;
         positions.set(tie.id,{x,y});
       }));
+      const occupiedColumns = [...new Set(visibleTies.map(tie => positions.get(tie.id)!.x))].sort((a,b) => a-b);
+      const width = Math.max(1, occupiedColumns.length)*260;
+      visibleTies.forEach(tie => {
+        const position = positions.get(tie.id)!;
+        positions.set(tie.id, { ...position, x: occupiedColumns.indexOf(position.x)*260+12 });
+      });
       const finalTie = groups.at(-1)?.[0];
       const champion = !editable ? winner(finalTie?.partidas[0]) : null;
       return <div key={phase.id}>
         {champion && <div className={styles.champion}><span aria-hidden="true">★</span><Logo participant={champion}/><div><small>CAMPEÃO DO CAMPEONATO</small><strong>{champion.jogador.apelido || champion.jogador.nome}</strong></div></div>}
         {!ties.length ? <p className="form-note">Chaveamento indisponível. Atualize o campeonato para carregar os confrontos.</p> : <div className={styles.scroll} tabIndex={0} role="region" aria-label="Chaveamento completo do campeonato"><div className={styles.bracket} style={{width,height}}>
-          <svg width={width} height={height} className={styles.lines} aria-hidden="true">{ties.flatMap(tie=>[tie.origemUmId,tie.origemDoisId].map(id=> {
+          <svg width={width} height={height} className={styles.lines} aria-hidden="true">{visibleTies.flatMap(tie=>[tie.origemUmId,tie.origemDoisId].map(id=> {
+            if (id == null || !visibleIds.has(id)) return null;
             const parent = id == null ? undefined : positions.get(id); const child = positions.get(tie.id);
             if(!parent || !child) return null;
             const right = parent.x > child.x; const x1=parent.x+(right?0:236); const x2=child.x+(right?236:0); const y1=parent.y+52; const y2=child.y+52; const middle=(x1+x2)/2;
             return <path key={`${tie.id}-${id}`} d={`M ${x1} ${y1} H ${middle} V ${y2} H ${x2}`}/>;
           }))}</svg>
           {groups.map((group,stage)=><div key={stage}>{group.map((tie,index)=> {
+            if (automatic(tie)) return null;
             const point=positions.get(tie.id)!; const match=tie.partidas[0]; const round=rounds[stage]; const victorious=winner(match);
             const playable=editable && round.status === "EM_ANDAMENTO" && !!match;
-            const sides=[tie.participanteUmId,tie.participanteDoisId];
+            const sides=[resolvedParticipant(tie.participanteUmId, tie.origemUmId),resolvedParticipant(tie.participanteDoisId, tie.origemDoisId)];
             return <div key={tie.id}>
-              {(index===0 || index===group.length/2) && <h3 className={styles.stage} style={{left:point.x,top:22}}>{tie.etapa?.nome || round.etapa?.nome || (group.length===1?"Final":`Etapa ${stage+1}`)}</h3>}
+              {!group.slice(0,index).some(previous => visibleIds.has(previous.id) && positions.get(previous.id)?.x === point.x) && <h3 className={styles.stage} style={{left:point.x,top:22}}>{tie.etapa?.nome || round.etapa?.nome || (group.length===1?"Final":`Etapa ${stage+1}`)}</h3>}
               <button type="button" className={styles.match} style={{left:point.x,top:point.y}} disabled={!playable} onClick={()=>{if(playable)setSelected(match)}} aria-label={`${tie.etapa?.nome || "Confronto"} ${tie.id}${playable?": adicionar ou editar placar":""}`} data-final={group.length===1}>
                 <span className={styles.meta}><span>CONFRONTO #{tie.id}</span><span>{match?.status === "FINALIZADA" ? "Finalizado" : playable ? "Em disputa" : !tie.origemUmId && !tie.participanteDoisId ? "Classificado" : "A definir"}</span></span>
                 {sides.map((id,side)=> {

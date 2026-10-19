@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { OfficialClassification } from "../[id]/provisional-standings";
 import type { SchedulePhase } from "../[id]/championship-schedule";
 import OrganizationDialog from "./organization-dialog";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 type Organization = { id: number; nome: string; ativo: boolean };
@@ -31,7 +31,7 @@ export default function ChampionshipForm({ initial, onSaved, onCancel }: { initi
   const [loadError, setLoadError] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
-  const [created, setCreated] = useState<Championship | null>(null);
+  const router = useRouter();
   const gameParam = useSearchParams().get("jogo");
   const game = gameParam === "PES" || gameParam === "FIFA" ? gameParam : "";
   const submitting = useRef(false);
@@ -57,13 +57,6 @@ export default function ChampionshipForm({ initial, onSaved, onCancel }: { initi
   }
   useEffect(() => { void loadOptions(); }, []);
 
-  if (created) return <section className="creation-panel" role="status">
-    <p className="eyebrow">CAMPEONATO CRIADO</p><h2>Você deu o start.</h2>
-    <p><strong>{created.organizacao.nome}</strong> · Edição {created.edicao}</p>
-    <p>Campeonato #{created.id} cadastrado com {created.participantes.length} participante(s). O formato e o início das partidas são definidos em uma etapa posterior.</p>
-    <Link className="form-submit" href={`/campeonatos/${created.id}`}>Ver campeonato ↗</Link>
-  </section>;
-
   return <><form className="creation-panel" aria-busy={loading || pending} onSubmit={async (event) => {
     event.preventDefault();
     if (submitting.current) return;
@@ -77,7 +70,18 @@ export default function ChampionshipForm({ initial, onSaved, onCancel }: { initi
       const response = await fetch(initial ? `/api/campeonatos/${initial.id}` : "/api/campeonatos", { method: initial ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ organizacaoId: Number(data.get("organizacaoId")), edicao: Number(data.get("edicao")), participantes: selected }) });
       const result = await response.json();
       if (!response.ok) throw new Error([result.detail, ...Object.values(result.erros || {})].filter(Boolean).join(" ") || "Não foi possível criar o campeonato.");
-      if (onSaved) onSaved(result); else setCreated(result);
+      if (onSaved) onSaved(result);
+      else {
+        setOrganizationId("");
+        setEdition("");
+        setSelected([]);
+        setPlayerId("");
+        setTeamId("");
+        setParticipantError("");
+        setOrganizationNotice("");
+        setOrganizationDialogOpen(false);
+        router.push(`/campeonatos/${result.id}`);
+      }
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Não foi possível confirmar a criação. Verifique o serviço antes de tentar novamente."); }
     finally { submitting.current = false; setPending(false); }
   }}>
