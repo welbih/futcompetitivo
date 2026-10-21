@@ -59,3 +59,27 @@ A criação envia apenas `organizacaoId`, `edicao` e `participantes` (pares de `
 `CampeonatoRequest`. Jogo e formato não pertencem a esse contrato. Os cadastros
 de organização, jogador e equipe devem existir e estar ativos. A API vincula os participantes ao salvar o campeonato.
 
+## X1
+
+A página `/x1`, disponível em Sua Arena, lista e cria confrontos pessoais entre
+dois participantes, cada um formado por jogador e equipe ativos, nos formatos
+melhor de 3 e melhor de 5. Permite acompanhar
+as partidas, registrar ou editar resultados, manter empates sem pênaltis,
+desempatar opcionalmente por pênaltis e encerrar
+a série antecipadamente após atingir a maioria das vitórias.
+
+A integração utiliza `GET /x1`, `GET /x1/{id}`, `POST /x1`,
+`PUT /x1/{id}/partidas/{partidaId}/resultado` e `POST /x1/{id}/encerrar`,
+com chamadas intermediadas pelas rotas `/api/x1` do Next.js. O mando alternado,
+a ordem das partidas, o vencedor e os cancelamentos são definidos pela API Java.
+
+A criação envia `participanteUm` e `participanteDois`, cada um com `jogadorId`
+e `equipeId`, além de `tipo` e `encerrarAntecipadamente`. Os jogadores devem
+ser diferentes; ambos podem escolher a mesma equipe. As respostas retornam
+os participantes com `jogador` e `equipe`, incluindo mandante, visitante e vencedor,
+e os placares da série em `vitoriasParticipanteUm` e `vitoriasParticipanteDois`.
+Empates sem disputa de pênaltis enviam ambos os campos de pênaltis como `null`
+e não somam vitória. Se houver disputa, os dois placares devem ser preenchidos
+e diferentes. Uma série finalizada com o mesmo número de vitórias termina
+empatada, sem vencedor. Essas regras também devem estar na API Java em execução.
+
