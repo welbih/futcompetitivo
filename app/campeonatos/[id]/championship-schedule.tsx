@@ -38,7 +38,7 @@ export type SchedulePhase = {
 
 export type ChampionshipGroup = { id: number; nome: string; participantes: Participant[]; classificacaoPorRodada: OfficialClassification[] };
 
-export type KnockoutTie = { id: number; participanteUmId: number | null; participanteDoisId: number | null; origemUmId: number | null; origemDoisId: number | null; tipo: string; partidas: SchedulePhase["rodadas"][number]["partidas"]; etapa?: { codigo: string; nome: string } };
+export type KnockoutTie = { id: number; participanteUmId: number | null; participanteDoisId: number | null; origemUmId: number | null; origemDoisId: number | null; tipo: string; partidas: SchedulePhase["rodadas"][number]["partidas"]; etapa?: { codigo: string; nome: string }; terceiroLugar?: boolean };
 
 const roundStatus: Record<string, string> = { PENDENTE: "Pendente", EM_ANDAMENTO: "Em andamento", FINALIZADA: "Finalizada" };
 const matchStatus: Record<string, string> = { AGENDADA: "Agendada", EM_ANDAMENTO: "Em andamento", FINALIZADA: "Finalizada" };
