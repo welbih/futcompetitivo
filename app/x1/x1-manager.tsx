@@ -76,7 +76,10 @@ function ActionDialog({ action, onClose, onSaved }: { action: Action; onClose: (
     <p className="eyebrow">SUA ARENA / X1</p><h2 id="x1-dialog-title">{action.kind === "create" ? "Comece uma rivalidade" : action.kind === "finish" ? "Encerrar a série?" : `Resultado · partida ${action.match.numero}`}</h2>
     <form onSubmit={async (event) => {
       event.preventDefault(); if (lock.current) return;
-      if (action.kind === "result" && tied && (homePens !== "" || awayPens !== "") && (homePens === "" || awayPens === "" || Number(homePens) === Number(awayPens))) { setError("Preencha os dois placares de pênaltis com um vencedor ou deixe ambos em branco para manter o empate."); return; }
+      if (action.kind === "result" && tied && (homePens === "" || awayPens === "" || Number(homePens) === Number(awayPens))) {
+        setError("Informe um vencedor nos pênaltis para salvar o resultado.");
+        return;
+      }
       lock.current = true; setPending(true); setError("");
       try {
         const path = action.kind === "create" ? "/api/x1" : action.kind === "finish" ? `/api/x1/${action.duel.id}/encerrar` : `/api/x1/${action.duel.id}/partidas/${action.match.id}/resultado`;
@@ -102,7 +105,14 @@ function ActionDialog({ action, onClose, onSaved }: { action: Action; onClose: (
         </> : action.kind === "finish" ? <p className={ui.description}>A série entre <strong>{name(action.duel.participanteUm)}</strong> e <strong>{name(action.duel.participanteDois)}</strong> já tem um vencedor definido. As partidas restantes serão canceladas.</p> : <>
           <p className={ui.description}>Registre o placar respeitando o mando desta partida.</p>
           <div className={styles.scoreInputs}><label htmlFor="x1-home">{name(action.match.mandante)}<small>Mandante</small><input id="x1-home" type="number" min="0" max="2147483647" required value={home} onChange={(event) => setHome(event.target.value)} /></label><span>×</span><label htmlFor="x1-away">{name(action.match.visitante)}<small>Visitante</small><input id="x1-away" type="number" min="0" max="2147483647" required value={away} onChange={(event) => setAway(event.target.value)} /></label></div>
-          {tied && <><p className={ui.description}>Pênaltis opcionais: deixe ambos os campos em branco para manter o empate.</p><div className={styles.scoreInputs}><label htmlFor="x1-home-pens">Pênaltis mandante<input id="x1-home-pens" type="number" min="0" max="2147483647" value={homePens} onChange={(event) => setHomePens(event.target.value)} /></label><span>×</span><label htmlFor="x1-away-pens">Pênaltis visitante<input id="x1-away-pens" type="number" min="0" max="2147483647" value={awayPens} onChange={(event) => setAwayPens(event.target.value)} /></label></div></>}
+          {tied && <>
+            <p id="x1-penalty-hint" className={ui.description}>Placar empatado. Preencha os dois campos de pênaltis com valores diferentes para definir o vencedor.</p>
+            <div className={styles.scoreInputs}>
+              <label htmlFor="x1-home-pens">Pênaltis mandante<input id="x1-home-pens" type="number" min="0" max="2147483647" required aria-describedby="x1-penalty-hint" value={homePens} onChange={(event) => setHomePens(event.target.value)} /></label>
+              <span>×</span>
+              <label htmlFor="x1-away-pens">Pênaltis visitante<input id="x1-away-pens" type="number" min="0" max="2147483647" required aria-describedby="x1-penalty-hint" value={awayPens} onChange={(event) => setAwayPens(event.target.value)} /></label>
+            </div>
+          </>}
         </>}
       </fieldset>
       {loading && <p role="status" className={ui.description}>Carregando jogadores e equipes…</p>}
