@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
 import { PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_SERVER } from "next/constants";
+import { teamLogoRemotePatterns } from "./app/equipes/logo-sources";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   cacheComponents: true,
   partialPrefetching: true,
+  images: { remotePatterns: teamLogoRemotePatterns, maximumRedirects: 0 },
   turbopack: {
     rules: {
       "globals.css": {

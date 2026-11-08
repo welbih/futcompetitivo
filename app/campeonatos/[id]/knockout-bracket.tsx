@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
+import { canOptimizeTeamLogo } from "../../equipes/logo-sources";
 import type { Championship, Participant } from "../novo/championship-form";
 import type { KnockoutTie, SchedulePhase } from "./championship-schedule";
 import ChampionshipScorers from "./championship-scorers";
@@ -14,6 +15,7 @@ const cardHeight = 110;
 const legSpacing = cardHeight + 12;
 const columnSpacing = 288;
 const zoomLevels = [50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150];
+const missingLogo = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 const legCount = (tie: KnockoutTie) => Math.max(tie.partidas.length, tie.tipo === "IDA_E_VOLTA" ? 2 : 1);
 const thirdPlace = (tie: KnockoutTie) => tie.terceiroLugar || tie.etapa?.codigo === "TERCEIRO_LUGAR";
 
@@ -35,18 +37,84 @@ function winner(tie?: KnockoutTie) {
 function Logo({ participant }: { participant: Participant }) {
   const url = participant.equipe.logoUrl?.trim();
   const [failed, setFailed] = useState<string | null>(null);
-  return <span className={styles.logo}>{url && failed !== url && (/^https?:\/\//i.test(url) || /^\/(?!\/)/.test(url)) ? <Image src={url} alt={participant.equipe.nome} width={28} height={28} unoptimized onError={() => setFailed(url)} /> : participant.equipe.nome.slice(0, 2).toUpperCase()}</span>;
+  const [failedOptimization, setFailedOptimization] = useState<string | null>(null);
+  const optimize = !!url && failedOptimization !== url && canOptimizeTeamLogo(url);
+  return <span className={styles.logo}>{url && failed !== url && (/^https?:\/\//i.test(url) || /^\/(?!\/)/.test(url)) ?
+    <Image src={url} alt={participant.equipe.nome} width={28} height={28} unoptimized={!optimize} onError={() => {
+      if (optimize) setFailedOptimization(url);
+      else setFailed(url);
+    }} /> : participant.equipe.nome.slice(0, 2).toUpperCase()}</span>;
 }
 export default function KnockoutBracket({ championship, onUpdated, embedded = false }: { embedded?: boolean; championship: Championship; onUpdated: (updated: Championship) => void }) {
   const [view, setView] = useState<"bracket" | "scorers">("bracket");
   const [selected, setSelected] = useState<Match | null>(null);
   const [zoomIndex, setZoomIndex] = useState(zoomLevels.indexOf(100));
+  const brackets = useRef(new Map<number, HTMLDivElement>());
+  const [exporting, setExporting] = useState<number | null>(null);
+  const [exportError, setExportError] = useState<number | null>(null);
   const zoom = zoomLevels[zoomIndex];
   const phases = championship.fases?.filter(phase => phase.tipo === "ELIMINATORIA") || [];
   const allRounds = championship.fases?.flatMap(phase => phase.rodadas) || [];
   const final = championship.status === "FINALIZADO";
   const leaders = topScorers(allRounds, championship.participantes).filter(row => row.position === 1 && row.goalsFor > 0);
   const editable = championship.status === "EM_ANDAMENTO";
+
+  async function downloadBracket(phaseId: number, width: number, height: number) {
+    const bracket = brackets.current.get(phaseId);
+    if (!bracket || exporting !== null) return;
+    setExporting(phaseId);
+    setExportError(null);
+    try {
+      const { toCanvas } = await import("html-to-image");
+      const colors = getComputedStyle(bracket);
+      const backgroundColor = colors.getPropertyValue("--panel").trim();
+      const bracketImage = await toCanvas(bracket, {
+        width,
+        height,
+        pixelRatio: 2,
+        style: { zoom: "1", margin: "0" },
+        backgroundColor,
+        imagePlaceholder: missingLogo,
+        skipFonts: true,
+        includeQueryParams: true,
+      });
+      const scale = bracketImage.width / width;
+      const headerHeight = Math.round(76 * scale);
+      const image = document.createElement("canvas");
+      image.width = Math.max(bracketImage.width, Math.round(440 * scale));
+      image.height = bracketImage.height + headerHeight;
+      const context = image.getContext("2d");
+      if (!context) throw new Error("Falha ao preparar a imagem.");
+      context.fillStyle = backgroundColor;
+      context.fillRect(0, 0, image.width, image.height);
+      context.drawImage(bracketImage, (image.width - bracketImage.width) / 2, headerHeight);
+      context.fillStyle = colors.getPropertyValue("--gold").trim();
+      context.font = `bold ${28 * scale}px Arial, sans-serif`;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      const organization = championship.organizacao.nome.trim();
+      const title = /^Campeonato\b/i.test(organization) ? organization : `Campeonato ${organization}`;
+      context.fillText(
+        `${title} ${championship.edicao}° Edição`,
+        image.width / 2,
+        headerHeight / 2,
+        image.width - 40 * scale,
+      );
+      const blob = await new Promise<Blob | null>(resolve => image.toBlob(resolve, "image/png"));
+      if (!blob) throw new Error("Falha ao gerar a imagem.");
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `chaveamento-${championship.id}-${phaseId}.png`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      setExportError(phaseId);
+    } finally {
+      setExporting(null);
+    }
+  }
+
   return <section aria-labelledby="knockout-title" className={styles.panel}>
     {!embedded && <div className="schedule-view-options" role="group" aria-label="Visualização do campeonato"><button type="button" aria-pressed={view === "bracket"} onClick={() => setView("bracket")}>Mata a mata</button><button type="button" aria-pressed={view === "scorers"} onClick={() => setView("scorers")}>Artilheiro</button></div>}
     <header className={styles.heading}><div><p className="eyebrow">O CAMINHO ATÉ A TAÇA</p><h2 id="knockout-title">{view === "bracket" ? "Mata a mata" : "Artilheiro"}</h2><p>{view === "bracket" ? "Confira os confrontos de cada etapa até a final" : "Os jogadores que mais balançaram a rede"}</p></div><span className={styles.badge}>ELIMINATÓRIO</span></header>
@@ -107,6 +175,14 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
         {champion && <div className={styles.champion}><span aria-hidden="true">★</span><Logo participant={champion}/><div><small>CAMPEÃO DO CAMPEONATO</small><strong>{champion.jogador.apelido || champion.jogador.nome}</strong></div></div>}
         {champion && final && leaders.map(row => <div key={row.participant.id} className={`${styles.champion} ${styles.scorer}`}><span aria-hidden="true">⚽</span><Logo participant={row.participant}/><div><small>ARTILHEIRO DO CAMPEONATO</small><strong>{row.participant.jogador.apelido || row.participant.jogador.nome}</strong><span>{row.goalsFor} {row.goalsFor === 1 ? "gol" : "gols"}</span></div></div>)}
         {!ties.length ? <p className="form-note">Chaveamento indisponível. Atualize o campeonato para carregar os confrontos.</p> : <div className={styles.frame}>
+          <div className={styles.toolbar}>
+          <button className={styles.capture} type="button" disabled={exporting !== null} onClick={() => void downloadBracket(phase.id, width, height)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 7h4l2-3h6l2 3h4v13H3z" />
+              <circle cx="12" cy="13" r="3" />
+            </svg>
+            {exporting === phase.id ? "Gerando imagem…" : "Baixar print"}
+          </button>
           <div className={styles.zoomControls} role="group" aria-label="Zoom do chaveamento">
             {[-1, 1].map(step => {
               const label = step < 0 ? "Diminuir zoom" : "Aumentar zoom";
@@ -122,7 +198,12 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
             })}
             <output aria-label="Nível de zoom">{zoom}%</output>
           </div>
-          <div className={styles.scroll} tabIndex={0} role="region" aria-label="Chaveamento completo do campeonato"><div className={styles.bracket} style={{ width, height, zoom: zoom / 100 }}>
+          </div>
+          {exportError === phase.id && <p className={styles.captureError} role="alert">Não foi possível baixar a imagem. Tente novamente.</p>}
+          <div className={styles.scroll} tabIndex={0} role="region" aria-label="Chaveamento completo do campeonato"><div className={styles.bracket} style={{ width, height, zoom: zoom / 100 }} ref={node => {
+            if (node) brackets.current.set(phase.id, node);
+            else brackets.current.delete(phase.id);
+          }}>
           <svg width={width} height={height} className={styles.lines} aria-hidden="true">{visibleTies.flatMap(tie=>[tie.origemUmId,tie.origemDoisId].map(id=> {
             if (id == null || !visibleIds.has(id)) return null;
             const parent = id == null ? undefined : positions.get(id); const child = positions.get(tie.id);
