@@ -95,7 +95,7 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
       const organization = championship.organizacao.nome.trim();
       const title = /^Campeonato\b/i.test(organization) ? organization : `Campeonato ${organization}`;
       context.fillText(
-        `${title} ${championship.edicao}° Edição`,
+        `${title} ${championship.edicao}ª Edição`,
         image.width / 2,
         headerHeight / 2,
         image.width - 40 * scale,

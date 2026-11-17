@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
 };
 
 export default function configure(phase: string): NextConfig {
+  const clientId = process.env.FUTCOMPETITIVO_CLIENT_ID?.trim();
+  const clientSecret = process.env.FUTCOMPETITIVO_CLIENT_SECRET;
+  if (!!clientId !== !!clientSecret?.trim()) {
+    throw new Error("Configure FUTCOMPETITIVO_CLIENT_ID e FUTCOMPETITIVO_CLIENT_SECRET juntos para a autenticação OAuth2.");
+  }
   const apiUrl = process.env.FUTCOMPETITIVO_API_URL?.trim();
   if (phase === PHASE_PRODUCTION_SERVER && !apiUrl) {
     throw new Error("Configure FUTCOMPETITIVO_API_URL no ambiente de produção ou em .env.production antes de iniciar o servidor.");

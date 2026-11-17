@@ -49,6 +49,27 @@ da API Java são gerenciados no projeto `futcompetitivo-api`.
 
 ## API de campeonatos
 
+### Variáveis de autenticação na Vercel
+
+Em Settings → Environment Variables do projeto, configure as variáveis para os
+ambientes desejados (Production, Preview e Development) e faça um novo deploy.
+
+| Variável | Valor |
+| --- | --- |
+| `FUTCOMPETITIVO_API_URL` | Endereço público do backend, por exemplo `https://api.seu-dominio.com` |
+| `FUTCOMPETITIVO_CLIENT_ID` | Mesmo valor de `CLIENT_ID` do backend |
+| `FUTCOMPETITIVO_CLIENT_SECRET` | Mesmo valor de `CLIENT_SECRET` do backend, marcado como Sensitive na Vercel |
+
+As credenciais são privadas do servidor Next.js. Mantenha os nomes sem
+`NEXT_PUBLIC_`. Para desenvolvimento local, preencha `.env.local` usando
+`.env.example` como referência. Informe as duas credenciais juntas.
+
+O backend atual autentica o cliente via HTTP Basic em
+`FUTCOMPETITIVO_API_URL/oauth2/token`, usando `grant_type=password` e as
+credenciais do usuário. Estas variáveis preparam a configuração do cliente OAuth2.
+A tela de login, a sessão e o envio do token Bearer nas chamadas à API ainda
+precisam ser implementados. `JWT_JWK` e `JWT_ISSUER` são configurações do backend.
+
 A página `/campeonatos/novo` usa `GET /organizacoes`, `GET /jogadores`, `GET /equipes` e
 `POST /campeonatos` da API Java. Inicie a API antes de preencher o formulário.
 O endereço padrão é `http://localhost:8080`; para alterar, copie `.env.example`
