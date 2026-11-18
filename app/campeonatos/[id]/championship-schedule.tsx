@@ -17,7 +17,7 @@ export type SchedulePhase = {
   id: number;
   ordem: number;
   tipo: string;
-  confrontos?: KnockoutTie[];
+  confrontos?: (Omit<KnockoutTie, "partidas"> & { partidas?: KnockoutTie["partidas"] | null; partidaIds?: number[] | null })[];
   quantidadeClassificados?: number | null;
   grupos?: ChampionshipGroup[];
   rodadas: {

@@ -1,5 +1,6 @@
 "use client";
 
+import { knockoutTies } from "./knockout-ties";
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { validYoutubeUrl } from "../../components/youtube-url";
@@ -114,7 +115,7 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
     <p className={styles.hint}>{editable ? "Selecione uma partida da etapa em andamento para registrar o placar. A próxima etapa é liberada ao concluir todos os jogos." : "Campeonato finalizado. Confira o caminho do campeão."} Arraste a barra horizontal para explorar o chaveamento.</p>
     {phases.map(phase => {
       const rounds = [...phase.rodadas].sort((a,b) => a.numero-b.numero);
-      const ties = phase.confrontos || [];
+      const ties = knockoutTies(phase);
       const bracketTies = ties.filter(tie => !thirdPlace(tie));
       const thirdPlaceTies = ties.filter(thirdPlace);
       const groups: KnockoutTie[][] = []; let offset = 0;

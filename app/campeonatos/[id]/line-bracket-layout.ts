@@ -1,3 +1,4 @@
+import { knockoutTies } from "./knockout-ties";
 import type { Participant } from "../novo/championship-form";
 import type { KnockoutTie, SchedulePhase } from "./championship-schedule";
 import { winner } from "./knockout-winner";
@@ -7,7 +8,7 @@ export type LineLeaf = LinePoint & { participant: Participant | null; right: boo
 export type LineGame = LinePoint & { tie: KnockoutTie; right: boolean; inputs: LinePoint[]; sides: (Participant | null)[] };
 
 export function lineBracketLayout(phase: SchedulePhase, participants: Participant[], withTrophy = false) {
-  const ties = phase.confrontos || [];
+  const ties = knockoutTies(phase);
   const main = ties.filter(tie => !tie.terceiroLugar && tie.etapa?.codigo !== "TERCEIRO_LUGAR");
   const final = main.find(tie => tie.etapa?.codigo === "FINAL") || main.at(-1);
   const bronze = ties.find(tie => tie.terceiroLugar || tie.etapa?.codigo === "TERCEIRO_LUGAR");

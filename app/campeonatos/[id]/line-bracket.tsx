@@ -1,5 +1,6 @@
 "use client";
 
+import { knockoutTies } from "./knockout-ties";
 import { useState, type ComponentType } from "react";
 import Image from "next/image";
 import type { Participant } from "../novo/championship-form";
@@ -56,7 +57,7 @@ export default function LineBracket({ organization, phase, participants, editabl
         return <path key={`final-${side}`} d={`M ${input.x} ${input.y} H ${elbow} V ${layout.centerY} H ${endX}`} />;
       })}
     </svg>
-    {layout.leaves.map(leaf => <div key={leaf.key} className={styles.leaf} data-right={leaf.right} data-eliminated={!!leaf.participant && (phase.confrontos || []).some(tie => {
+    {layout.leaves.map(leaf => <div key={leaf.key} className={styles.leaf} data-right={leaf.right} data-eliminated={!!leaf.participant && knockoutTies(phase).some(tie => {
       if (tie.terceiroLugar || tie.etapa?.codigo === "TERCEIRO_LUGAR") return false;
       const victorious = winner(tie);
       return !!victorious && victorious.id !== leaf.participant!.id && tie.partidas.some(match => match.mandante.id === leaf.participant!.id || match.visitante.id === leaf.participant!.id);

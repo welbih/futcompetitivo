@@ -1,3 +1,4 @@
+import { knockoutTies } from "../campeonatos/[id]/knockout-ties";
 import type { Championship, Participant } from "../campeonatos/novo/championship-form";
 import { championshipChampion } from "../components/championship-champion";
 
@@ -12,7 +13,7 @@ export function hallEditions(championships: Championship[]): HallEdition[] {
     let runnerUp: Participant | null = null;
     const knockout = championship.fases?.filter(phase => phase.tipo === "ELIMINATORIA").at(-1);
     if (knockout) {
-      const ties = knockout.confrontos?.filter(tie => !tie.terceiroLugar && tie.etapa?.codigo !== "TERCEIRO_LUGAR") || [];
+      const ties = knockoutTies(knockout).filter(tie => !tie.terceiroLugar && tie.etapa?.codigo !== "TERCEIRO_LUGAR");
       const final = ties.find(tie => tie.etapa?.codigo === "FINAL") || ties.at(-1);
       const match = final?.partidas[0];
       if (match) runnerUp = match.mandante.id === champion.id ? match.visitante : match.mandante;
