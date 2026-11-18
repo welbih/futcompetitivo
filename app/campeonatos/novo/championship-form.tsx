@@ -7,7 +7,7 @@ import OrganizationDialog from "./organization-dialog";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-type Organization = { id: number; nome: string; ativo: boolean };
+type Organization = { id: number; nome: string; ativo: boolean; trofeuUrl?: string | null };
 type Player = { id: number; nome: string; apelido: string; ativo: boolean };
 type Team = { id: number; nome: string; ativo: boolean };
 type Entry = { jogadorId: number; equipeId: number };

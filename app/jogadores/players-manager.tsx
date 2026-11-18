@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useAdminPermission, useAuthenticatedPermission } from "../components/use-admin-permission";
 import styles from "./players.module.css";
+import PlayerJersey from "../components/player-jersey";
 
 type Player = { id: number; nome: string; apelido: string | null; ativo: boolean };
 type Action = { kind: "create" } | { kind: "edit" | "deactivate"; player: Player };
@@ -14,6 +16,8 @@ async function readResponse(response: Response) {
 }
 
 function PlayerDialog({ action, onClose, onSaved, onDeactivated }: { action: Action; onClose: () => void; onSaved: (player: Player) => void; onDeactivated: (id: number) => void }) {
+  const isAdmin = useAdminPermission();
+  const authenticated = useAuthenticatedPermission();
   const dialog = useRef<HTMLDialogElement>(null);
   const lock = useRef(false);
   const [pending, setPending] = useState(false);
@@ -30,6 +34,8 @@ function PlayerDialog({ action, onClose, onSaved, onDeactivated }: { action: Act
     <p className="eyebrow">FUTEBOL COMPETITIVO / JOGADOR</p><h2 id="player-dialog-title">{deactivate ? "Inativar jogador?" : player ? "Editar jogador" : "Novo jogador"}</h2>
     <form onSubmit={async (event) => {
       event.preventDefault();
+      if ((action.kind === "create" || action.kind === "edit") && !authenticated) { setError("Entre na sua conta para cadastrar ou editar jogadores."); return; }
+      if (deactivate && !isAdmin) { setError("Somente administradores podem inativar cadastros."); return; }
       if (lock.current || (!deactivate && !name.trim())) return;
       lock.current = true; setPending(true); setError("");
       try {
@@ -59,6 +65,8 @@ function PlayerDialog({ action, onClose, onSaved, onDeactivated }: { action: Act
 }
 
 export default function PlayersManager() {
+  const isAdmin = useAdminPermission();
+  const authenticated = useAuthenticatedPermission();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -69,7 +77,7 @@ export default function PlayersManager() {
   const activationLock = useRef(false);
 
   async function activatePlayer(player: Player) {
-    if (activationLock.current) return;
+    if (!isAdmin || activationLock.current) return;
     activationLock.current = true; setActivatingId(player.id); setError(""); setNotice("");
     try {
       const result = await readResponse(await fetch(`/api/jogadores/${player.id}/ativar`, { method: "PUT" }));
@@ -89,13 +97,15 @@ export default function PlayersManager() {
     return () => controller.abort();
   }, [reload]);
 
-  return <main className="resource-page"><p className="eyebrow">FUTEBOL COMPETITIVO / SUA ARENA</p><div className="resource-heading"><div><h1>Jogador</h1><p>Cadastre e gerencie os jogadores que fazem parte da sua arena.</p></div><button type="button" className={styles.primary} onClick={() => { setNotice(""); setAction({ kind: "create" }); }}>+ Novo jogador</button></div>
+  const visible = players.filter(item => isAdmin || item.ativo).sort((a, b) => (a.apelido?.trim() || a.nome).localeCompare(b.apelido?.trim() || b.nome, "pt-BR", { sensitivity: "base" }) || a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }) || a.id - b.id);
+
+  return <main className="resource-page"><p className="eyebrow">FUTEBOL COMPETITIVO / SUA ARENA</p><div className="resource-heading"><div><h1>Jogadores</h1><p>Cadastre e gerencie os jogadores que fazem parte da sua arena.</p></div>{authenticated && <button type="button" className={styles.primary} onClick={() => { setNotice(""); setAction({ kind: "create" }); }}>+ Novo jogador</button>}</div>
     {notice && <p role="status" className={styles.notice}>{notice}</p>}
     {loading && <p role="status" className="form-note">Carregando jogadores…</p>}
     {error && <div role="alert" className={styles.error}><p>{error}</p><button type="button" className={styles.secondary} onClick={() => { setLoading(true); setError(""); setReload((value) => value + 1); }}>Atualizar listagem</button></div>}
-    {!loading && !error && !players.length && <p className="resource-empty">Nenhum jogador cadastrado. Clique em Novo jogador para começar.</p>}
-    <div className="resource-grid">{players.map((player) => <article key={player.id} className={styles.card}><span className="eyebrow">#{player.id}</span><h2>{player.apelido?.trim() || player.nome}</h2>{player.apelido && <p>{player.nome}</p>}<span className={player.ativo ? styles.active : styles.inactive}>{player.ativo ? "Ativo" : "Inativo"}</span><div className={styles.cardActions}>{player.ativo ? <><button type="button" className={styles.secondary} disabled={activatingId !== null} aria-label={`Editar ${player.apelido || player.nome}`} onClick={() => { setNotice(""); setAction({ kind: "edit", player }); }}>Editar</button><button type="button" className={styles.deactivate} disabled={activatingId !== null} aria-label={`Inativar ${player.apelido || player.nome}`} onClick={() => { setNotice(""); setAction({ kind: "deactivate", player }); }}>Inativar</button></> : <button type="button" className={styles.primary} disabled={activatingId !== null} aria-label={`Ativar ${player.apelido || player.nome}`} onClick={() => activatePlayer(player)}>{activatingId === player.id ? "Ativando…" : "Ativar"}</button>}</div></article>)}</div>
-    {action && <PlayerDialog key={action.kind === "create" ? "create" : `${action.kind}-${action.player.id}`} action={action} onClose={() => setAction(null)} onSaved={(player) => {
+    {!loading && !error && !visible.length && <p className="resource-empty">Nenhum jogador disponível.{authenticated && " Clique em Novo jogador para começar."}</p>}
+    <div className="resource-grid">{visible.map((player, index) => <article key={player.id} className={styles.card}><PlayerJersey player={player} away={index % 2 === 1} /><p className={styles.playerFullName}>{player.nome}</p>{isAdmin && <span className={player.ativo ? styles.active : styles.inactive}>{player.ativo ? "Ativo" : "Inativo"}</span>}{authenticated && <div className={styles.cardActions}>{player.ativo ? <><button type="button" className={styles.secondary} disabled={activatingId !== null} aria-label={`Editar ${player.apelido || player.nome}`} onClick={() => { setNotice(""); setAction({ kind: "edit", player }); }}>Editar</button>{isAdmin && <button type="button" className={styles.deactivate} disabled={activatingId !== null} aria-label={`Inativar ${player.apelido || player.nome}`} onClick={() => { setNotice(""); setAction({ kind: "deactivate", player }); }}>Inativar</button>}</> : isAdmin && <button type="button" className={styles.primary} disabled={activatingId !== null} aria-label={`Ativar ${player.apelido || player.nome}`} onClick={() => activatePlayer(player)}>{activatingId === player.id ? "Ativando…" : "Ativar"}</button>}</div>}</article>)}</div>
+    {action && (action.kind !== "deactivate" || isAdmin) && (action.kind === "deactivate" || authenticated) && <PlayerDialog key={action.kind === "create" ? "create" : `${action.kind}-${action.player.id}`} action={action} onClose={() => setAction(null)} onSaved={(player) => {
       setPlayers((previous) => [...previous.filter((item) => item.id !== player.id), player].sort((a, b) => a.id - b.id));
       setNotice(action.kind === "create" ? "Jogador criado com sucesso." : "Jogador atualizado com sucesso.");
     }} onDeactivated={(id) => { setPlayers((previous) => previous.map((player) => player.id === id ? { ...player, ativo: false } : player)); setNotice("Jogador inativado com sucesso."); }} />}

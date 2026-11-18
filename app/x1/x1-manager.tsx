@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import PlayerJersey from "../components/player-jersey";
 import { validYoutubeUrl } from "../components/youtube-url";
 import ChampionshipDeleteMenu from "../components/championship-delete-menu";
 import { useAdminPermission } from "../components/use-admin-permission";
@@ -175,8 +176,8 @@ export default function X1Manager() {
             setAction(current => current && "duel" in current && current.duel.id === duel.id ? null : current);
             setNotice("X1 apagado com sucesso.");
           }} />}
-        <div className={styles.cardHeader}><span className="eyebrow">X1 #{duel.id} · {format(duel)}</span><span className={duel.status === "FINALIZADO" ? styles.finished : styles.live}>{duel.status === "FINALIZADO" ? "Finalizado" : "Em andamento"}</span></div>
-        <div className={styles.versus}><div className={`${styles.participant}${winner?.id === duel.participanteUm.id ? ` ${styles.winningPlayer}` : ""}`} aria-label={winner?.id === duel.participanteUm.id ? `Vencedor: ${name(duel.participanteUm)}` : undefined}><span className={styles.avatar}>{name(duel.participanteUm).slice(0, 2).toUpperCase()}</span><h3>{name(duel.participanteUm)}</h3></div><div className={styles.score}><strong>{duel.vitoriasParticipanteUm}<small>:</small>{duel.vitoriasParticipanteDois}</strong><span>VITÓRIAS</span></div><div className={`${styles.participant}${winner?.id === duel.participanteDois.id ? ` ${styles.winningPlayer}` : ""}`} aria-label={winner?.id === duel.participanteDois.id ? `Vencedor: ${name(duel.participanteDois)}` : undefined}><span className={styles.avatar}>{name(duel.participanteDois).slice(0, 2).toUpperCase()}</span><h3>{name(duel.participanteDois)}</h3></div></div>
+        <span className={`${styles.cardStatus} ${duel.status === "FINALIZADO" ? styles.finished : styles.live}`}>{duel.status === "FINALIZADO" ? "Finalizado" : "Em andamento"}</span><div className={styles.cardHeader}><h2 className={styles.cardTitle}>{format(duel)}</h2></div>
+        <div className={styles.versus}><div className={`${styles.participant}${winner?.id === duel.participanteUm.id ? ` ${styles.winningPlayer}` : ""}`} aria-label={winner?.id === duel.participanteUm.id ? `Vencedor: ${name(duel.participanteUm)}` : undefined}><PlayerJersey player={duel.participanteUm.jogador} compact /><h3>{duel.participanteUm.equipe.nome}</h3></div><div className={styles.score}><strong>{duel.vitoriasParticipanteUm}<small>:</small>{duel.vitoriasParticipanteDois}</strong><span>VITÓRIAS</span></div><div className={`${styles.participant}${winner?.id === duel.participanteDois.id ? ` ${styles.winningPlayer}` : ""}`} aria-label={winner?.id === duel.participanteDois.id ? `Vencedor: ${name(duel.participanteDois)}` : undefined}><PlayerJersey player={duel.participanteDois.jogador} compact away /><h3>{duel.participanteDois.equipe.nome}</h3></div></div>
         <div className={styles.progress} aria-label="Progresso das partidas">{matches.map((match) => <span key={match.id} data-status={match.status} title={`Partida ${match.numero}: ${match.status === "FINALIZADA" ? "finalizada" : match.status === "CANCELADA" ? "cancelada" : "agendada"}`} />)}</div>
         {!winner && <p className={styles.summary}>{duel.status === "FINALIZADO" ? "Série encerrada · empate" : `Próxima: partida ${next?.numero ?? "—"} · ${majority} vitórias para vencer`}</p>}
         <div className={styles.actions}><button className={ui.secondary} aria-expanded={expanded} aria-controls={`x1-matches-${duel.id}`} onClick={() => setSelected(expanded ? null : duel.id)}>{expanded ? "Recolher partidas ↑" : "Acompanhar série ↓"}</button>{next && <button className={ui.primary} onClick={() => setAction({ kind: "result", duel, match: next })}>Incluir resultado</button>}</div>

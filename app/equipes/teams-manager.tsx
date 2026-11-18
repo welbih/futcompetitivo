@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useAdminPermission, useAuthenticatedPermission } from "../components/use-admin-permission";
 import Image from "next/image";
 import styles from "./teams.module.css";
 
@@ -20,7 +21,24 @@ function TeamLogo({ team }: { team: { nome: string; logoUrl: string } }) {
   const valid = /^https?:\/\//i.test(url) || /^\/(?!\/)/.test(url);
   return <div className={styles.logo}>{valid && failedUrl !== url ? <Image src={url} alt={`Logo de ${team.nome}`} width={64} height={64} unoptimized onError={() => setFailedUrl(url)} /> : <span aria-label={`Equipe ${team.nome}, logo indisponível`}>{team.nome.slice(0, 2).toUpperCase()}</span>}</div>;
 }
+function TeamFlag({ team }: { team: { nome: string; logoUrl: string } }) {
+  return <div className={styles.flagStage}>
+    <span className={styles.flagPole} aria-hidden="true" />
+    <div className={styles.flagFabric}>
+      <div className={styles.flagMeasure}><div className={styles.flagIdentity}><TeamLogo team={team} /><h2>{team.nome}</h2></div></div>
+      {Array.from({ length: 16 }, (_, index) => <div key={index} className={styles.flagSlice} aria-hidden="true" style={{ "--slice": index, "--wave-height": `${index * .6}px`, "--wave-delay": `${index * -.12}s` } as CSSProperties}>
+        <div className={styles.flagSliceContent}>
+          <div className={styles.flagIdentity}><TeamLogo team={team} /><h2>{team.nome}</h2></div>
+          <span className={styles.flagFolds} />
+        </div>
+      </div>)}
+    </div>
+  </div>;
+}
+
 function TeamDialog({ action, onClose, onSaved, onDeactivated }: { action: Action; onClose: () => void; onSaved: (team: Team) => void; onDeactivated: (id: number) => void }) {
+  const isAdmin = useAdminPermission();
+  const authenticated = useAuthenticatedPermission();
   const dialog = useRef<HTMLDialogElement>(null);
   const lock = useRef(false);
   const [pending, setPending] = useState(false);
@@ -37,6 +55,8 @@ function TeamDialog({ action, onClose, onSaved, onDeactivated }: { action: Actio
     <p className="eyebrow">FUTEBOL COMPETITIVO / EQUIPE</p><h2 id="team-dialog-title">{deactivate ? "Inativar equipe?" : team ? "Editar equipe" : "Nova equipe"}</h2>
     <form onSubmit={async (event) => {
       event.preventDefault();
+      if ((action.kind === "create" || action.kind === "edit") && !authenticated) { setError("Entre na sua conta para cadastrar ou editar equipes."); return; }
+      if (deactivate && !isAdmin) { setError("Somente administradores podem inativar cadastros."); return; }
       if (lock.current || (!deactivate && (!name.trim() || !logoUrl.trim()))) return;
       lock.current = true; setPending(true); setError("");
       try {
@@ -57,7 +77,7 @@ function TeamDialog({ action, onClose, onSaved, onDeactivated }: { action: Actio
       {deactivate ? <p className={styles.description}>Deseja inativar <strong>{team?.nome}</strong>? Ela permanecerá na listagem como inativa e não poderá ser incluída em novos campeonatos. O histórico será preservado.</p> : <fieldset disabled={pending} className={styles.fields}>
         <label htmlFor="team-name">Nome <span>*</span></label><input id="team-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Nome da equipe" required maxLength={255} pattern=".*\S.*" autoFocus />
         <label htmlFor="team-logo">Endereço da logo <span>*</span></label><input id="team-logo" value={logoUrl} onChange={(event) => setLogoUrl(event.target.value)} placeholder="https://exemplo.com/logo.png" required maxLength={255} pattern=".*\S.*" />
-        <div className={styles.preview}><span className={styles.previewLabel}>Prévia na listagem</span><article className={styles.card} aria-label="Prévia do card da equipe"><TeamLogo team={{ nome: name.trim() || "Equipe", logoUrl }} /><h2>{name.trim() || "Nome da equipe"}</h2><span className={styles.active}>Ativa</span></article><p className={styles.previewHint}>A imagem será exibida com o mesmo tamanho e proporção da listagem.</p></div>
+        <div className={styles.preview}><span className={styles.previewLabel}>Prévia na listagem</span><article className={styles.card} aria-label="Prévia do card da equipe"><TeamFlag team={{ nome: name.trim() || "Nome da equipe", logoUrl }} />{isAdmin && <span className={styles.active}>Ativa</span>}</article><p className={styles.previewHint}>A imagem será exibida com o mesmo tamanho e proporção da listagem.</p></div>
       </fieldset>}
       {error && <p role="alert" className={styles.error}>{error}</p>}
       <div className={styles.dialogActions}><button type="button" className={styles.secondary} disabled={pending} onClick={() => dialog.current?.close()}>Cancelar</button><button type="submit" className={deactivate ? styles.danger : styles.primary} disabled={pending || (!deactivate && (!name.trim() || !logoUrl.trim()))}>{pending ? "Salvando…" : deactivate ? "Inativar equipe" : "Salvar equipe"}</button></div>
@@ -67,6 +87,8 @@ function TeamDialog({ action, onClose, onSaved, onDeactivated }: { action: Actio
 }
 
 export default function TeamsManager() {
+  const isAdmin = useAdminPermission();
+  const authenticated = useAuthenticatedPermission();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -77,7 +99,7 @@ export default function TeamsManager() {
   const activationLock = useRef(false);
 
   async function activateTeam(team: Team) {
-    if (activationLock.current) return;
+    if (!isAdmin || activationLock.current) return;
     activationLock.current = true; setActivatingId(team.id); setError(""); setNotice("");
     try {
       const result = await readResponse(await fetch(`/api/equipes/${team.id}/ativar`, { method: "PUT" }));
@@ -97,13 +119,15 @@ export default function TeamsManager() {
     return () => controller.abort();
   }, [reload]);
 
-  return <main className="resource-page"><p className="eyebrow">FUTEBOL COMPETITIVO / SUA ARENA</p><div className="resource-heading"><div><h1>Equipe</h1><p>Cadastre e gerencie as equipes que entram em campo na sua arena.</p></div><button type="button" className={styles.primary} onClick={() => { setNotice(""); setAction({ kind: "create" }); }}>+ Nova equipe</button></div>
+  const visible = teams.filter(item => isAdmin || item.ativo).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }) || a.id - b.id);
+
+  return <main className="resource-page"><p className="eyebrow">FUTEBOL COMPETITIVO / SUA ARENA</p><div className="resource-heading"><div><h1>Equipes</h1><p>Cadastre e gerencie as equipes que entram em campo na sua arena.</p></div>{authenticated && <button type="button" className={styles.primary} onClick={() => { setNotice(""); setAction({ kind: "create" }); }}>+ Nova equipe</button>}</div>
     {notice && <p role="status" className={styles.notice}>{notice}</p>}
     {loading && <p role="status" className="form-note">Carregando equipes…</p>}
     {error && <div role="alert" className={styles.error}><p>{error}</p><button type="button" className={styles.secondary} onClick={() => { setLoading(true); setError(""); setReload((value) => value + 1); }}>Atualizar listagem</button></div>}
-    {!loading && !error && !teams.length && <p className="resource-empty">Nenhuma equipe cadastrada. Clique em Nova equipe para começar.</p>}
-    <div className="resource-grid">{teams.map((team) => <article key={team.id} className={styles.card}><span className="eyebrow">#{team.id}</span><TeamLogo team={team} /><h2>{team.nome}</h2><span className={team.ativo ? styles.active : styles.inactive}>{team.ativo ? "Ativa" : "Inativa"}</span><div className={styles.cardActions}>{team.ativo ? <><button type="button" className={styles.secondary} disabled={activatingId !== null} aria-label={`Editar ${team.nome}`} onClick={() => { setNotice(""); setAction({ kind: "edit", team }); }}>Editar</button><button type="button" className={styles.deactivate} disabled={activatingId !== null} aria-label={`Inativar ${team.nome}`} onClick={() => { setNotice(""); setAction({ kind: "deactivate", team }); }}>Inativar</button></> : <button type="button" className={styles.primary} disabled={activatingId !== null} aria-label={`Ativar ${team.nome}`} onClick={() => activateTeam(team)}>{activatingId === team.id ? "Ativando…" : "Ativar"}</button>}</div></article>)}</div>
-    {action && <TeamDialog key={action.kind === "create" ? "create" : `${action.kind}-${action.team.id}`} action={action} onClose={() => setAction(null)} onSaved={(team) => {
+    {!loading && !error && !visible.length && <p className="resource-empty">Nenhuma equipe disponível.{authenticated && " Clique em Nova equipe para começar."}</p>}
+    <div className="resource-grid">{visible.map((team) => <article key={team.id} className={styles.card}><TeamFlag team={team} />{isAdmin && <span className={team.ativo ? styles.active : styles.inactive}>{team.ativo ? "Ativa" : "Inativa"}</span>}{authenticated && <div className={styles.cardActions}>{team.ativo ? <><button type="button" className={styles.secondary} disabled={activatingId !== null} aria-label={`Editar ${team.nome}`} onClick={() => { setNotice(""); setAction({ kind: "edit", team }); }}>Editar</button>{isAdmin && <button type="button" className={styles.deactivate} disabled={activatingId !== null} aria-label={`Inativar ${team.nome}`} onClick={() => { setNotice(""); setAction({ kind: "deactivate", team }); }}>Inativar</button>}</> : isAdmin && <button type="button" className={styles.primary} disabled={activatingId !== null} aria-label={`Ativar ${team.nome}`} onClick={() => activateTeam(team)}>{activatingId === team.id ? "Ativando…" : "Ativar"}</button>}</div>}</article>)}</div>
+    {action && (action.kind !== "deactivate" || isAdmin) && (action.kind === "deactivate" || authenticated) && <TeamDialog key={action.kind === "create" ? "create" : `${action.kind}-${action.team.id}`} action={action} onClose={() => setAction(null)} onSaved={(team) => {
       setTeams((previous) => [...previous.filter((item) => item.id !== team.id), team].sort((a, b) => a.id - b.id));
       setNotice(action.kind === "create" ? "Equipe criada com sucesso." : "Equipe atualizada com sucesso.");
     }} onDeactivated={(id) => { setTeams((previous) => previous.map((team) => team.id === id ? { ...team, ativo: false } : team)); setNotice("Equipe inativada com sucesso."); }} />}

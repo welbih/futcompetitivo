@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export function useAdminPermission(enabled = true) {
+function useSessionPermission(enabled: boolean, adminOnly: boolean) {
   const [adminUntil, setAdminUntil] = useState(0);
 
   useEffect(() => {
@@ -16,8 +16,9 @@ export function useAdminPermission(enabled = true) {
         const { user } = await response.json();
         if (controller.signal.aborted) return;
         clearTimeout(timer);
-        setAdminUntil(user?.isAdmin ? user.expiresAt : 0);
-        if (user?.isAdmin) timer = setTimeout(() => setAdminUntil(0), Math.min(2147483647, Math.max(0, user.expiresAt - Date.now())));
+        const allowed = user && (!adminOnly || user.isAdmin);
+        setAdminUntil(allowed ? user.expiresAt : 0);
+        if (allowed) timer = setTimeout(() => setAdminUntil(0), Math.min(2147483647, Math.max(0, user.expiresAt - Date.now())));
       } catch { if (!controller.signal.aborted) setAdminUntil(0); }
     }
     void syncPermissions();
@@ -28,7 +29,15 @@ export function useAdminPermission(enabled = true) {
       window.removeEventListener("arena-auth-change", syncPermissions);
       window.removeEventListener("focus", syncPermissions);
     };
-  }, [enabled]);
+  }, [enabled, adminOnly]);
 
   return adminUntil > 0;
+}
+
+export function useAdminPermission(enabled = true) {
+  return useSessionPermission(enabled, true);
+}
+
+export function useAuthenticatedPermission() {
+  return useSessionPermission(true, false);
 }

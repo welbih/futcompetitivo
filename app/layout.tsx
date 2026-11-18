@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import "./globals.css";
+import "./theme.css";
 import AppShell from "./components/app-shell";
 
 export const metadata: Metadata = {

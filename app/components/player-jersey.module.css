@@ -1,0 +1,15 @@
+.jersey { position:relative; width:min(100%,280px); aspect-ratio:280/250; margin:0 auto; filter:drop-shadow(0 12px 12px #0005); transition:transform .2s ease; }
+.jerseyShape { display:block; width:100%; height:100%; }
+.jerseyPrint { position:absolute; inset:23% 29% 14%; display:flex; flex-direction:column; align-items:center; color:var(--gold-light); }
+.jerseyClub { font-size:clamp(5px,.7vw,7px); letter-spacing:1px; white-space:nowrap; color:#cfd8e6; }
+.jerseyPrint h2 { margin:12px 0 8px; width:100%; font-family:var(--font-heading); font-size:clamp(12px,1.6vw,18px); line-height:1.2; text-transform:uppercase; letter-spacing:1px; overflow-wrap:anywhere; text-shadow:0 2px 3px #0008; }
+.jerseyEmblem { display:flex; flex-direction:column; align-items:center; gap:2px; margin-top:auto; color:var(--gold); font-size:16px; }
+.jerseyEmblem b { font-family:var(--font-display); font-weight:400; font-size:44px; line-height:1; letter-spacing:2px; }
+.jerseyAway .jerseyPrint,.jerseyAway .jerseyClub,.jerseyAway .jerseyEmblem { color:#101c63; }
+.jerseyAway .jerseyPrint h2 { text-shadow:0 1px 1px #fff6; }
+.jersey { container-type:inline-size; }
+.compact { width:min(100%,160px); }
+.compact .jerseyPrint h2 { font-size:clamp(8px,8cqw,13px); margin:6px 0 4px; }
+.compact .jerseyClub { font-size:4px; letter-spacing:.5px; }
+.compact .jerseyEmblem { font-size:10px; }
+.compact .jerseyEmblem b { font-size:28px; }

@@ -12,6 +12,8 @@ import { topScorers } from "./provisional-standings";
 import MatchResultDialog from "./match-result-dialog";
 import styles from "./knockout-bracket.module.css";
 import { winner } from "./knockout-winner";
+import LineBracket from "./line-bracket";
+import { lineBracketLayout } from "./line-bracket-layout";
 
 type Match = SchedulePhase["rodadas"][number]["partidas"][number];
 const cardHeight = 140;
@@ -35,6 +37,7 @@ function Logo({ participant }: { participant: Participant }) {
 }
 export default function KnockoutBracket({ championship, onUpdated, embedded = false }: { embedded?: boolean; championship: Championship; onUpdated: (updated: Championship) => void }) {
   const isAdmin = useAdminPermission();
+  const [layoutStyle, setLayoutStyle] = useState<"cards" | "lines">("cards");
   const [view, setView] = useState<"bracket" | "scorers">("bracket");
   const [selected, setSelected] = useState<Match | null>(null);
   const [zoomIndex, setZoomIndex] = useState(zoomLevels.indexOf(100));
@@ -148,7 +151,7 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
         positions.set(tie.id,{x,y});
       }));
       const occupiedColumns = [...new Set(visibleTies.map(tie => positions.get(tie.id)!.x))].sort((a,b) => a-b);
-      const width = Math.max(1, occupiedColumns.length)*columnSpacing;
+      let width = Math.max(1, occupiedColumns.length)*columnSpacing;
       visibleTies.forEach(tie => {
         const position = positions.get(tie.id)!;
         positions.set(tie.id, { ...position, x: occupiedColumns.indexOf(position.x)*columnSpacing+26 });
@@ -158,6 +161,11 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
         positions.set(tie.id, { x: finalTie ? positions.get(finalTie.id)!.x : 26, y: height + 48 });
         height += 48 + legCount(tie) * legSpacing + 24;
         labels.set(tie.id, tie.etapa?.nome || "Disputa de terceiro lugar");
+      }
+      if (layoutStyle !== "cards") {
+        const lineLayout = lineBracketLayout(phase, championship.participantes, !!championship.organizacao.trofeuUrl);
+        width = lineLayout.width;
+        height = lineLayout.height;
       }
       const champion = !editable ? winner(finalTie) : null;
       return <div key={phase.id}>
@@ -172,6 +180,10 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
             </svg>
             {exporting === phase.id ? "Gerando imagem…" : "Baixar print"}
           </button>
+          <div className={styles.layoutOptions} role="group" aria-label="Estilo do chaveamento">
+            <button type="button" aria-pressed={layoutStyle === "cards"} onClick={() => setLayoutStyle("cards")}>Cards</button>
+            <button type="button" aria-pressed={layoutStyle === "lines"} onClick={() => setLayoutStyle("lines")}>Linhas</button>
+          </div>
           <div className={styles.zoomControls} role="group" aria-label="Zoom do chaveamento">
             {[-1, 1].map(step => {
               const label = step < 0 ? "Diminuir zoom" : "Aumentar zoom";
@@ -193,6 +205,7 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
             if (node) brackets.current.set(phase.id, node);
             else brackets.current.delete(phase.id);
           }}>
+          {layoutStyle !== "cards" ? <LineBracket organization={championship.organizacao} phase={phase} participants={championship.participantes} editable={editable} isAdmin={isAdmin} onSelect={setSelected} Logo={Logo} /> : <>
           <svg width={width} height={height} className={styles.lines} aria-hidden="true">{visibleTies.flatMap(tie=>[tie.origemUmId,tie.origemDoisId].map(id=> {
             if (id == null || !visibleIds.has(id)) return null;
             const parent = id == null ? undefined : positions.get(id); const child = positions.get(tie.id);
@@ -241,6 +254,7 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
               })}
             </div>;
           })}</div>)}
+          </>}
         </div></div></div>}
       </div>;
     })}

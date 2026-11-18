@@ -39,11 +39,11 @@ export default function HallOfFamePage() {
 
   return <main className={`resource-page ${styles.page}`}>
     <header className={styles.hero}>
+      <div className={styles.ball} aria-hidden="true" />
       <p className="eyebrow">FUTEBOL COMPETITIVO / SUA ARENA</p>
       <span className={styles.kicker}>★ A HISTÓRIA DOS CAMPEÕES</span>
       <h1>Hall da <span>Fama</span></h1>
       <p>Os nomes que marcaram cada edição. As conquistas que fazem a nossa história.</p>
-      {!loading && !error && <div className={styles.heroStats}><span><b>{editions.length}</b> edições com campeão</span><span><b>{ranking.filter(row => row.titles > 0).length}</b> campeões</span><span><b>{organizations.length}</b> organizações</span></div>}
     </header>
     {loading && <p role="status" className="form-note">Carregando a história dos campeonatos…</p>}
     {error && <div role="alert" className="form-error"><p>{error}</p><button className="retry-button" onClick={() => { setLoading(true); setError(""); setRetry(value => value + 1); }}>Tentar novamente</button></div>}
@@ -57,14 +57,16 @@ export default function HallOfFamePage() {
             <article className={styles.highlight}><span className={styles.category}>CAMPEÕES DO TORNEIO</span><strong>{ranking.filter(row => row.titles > 0).length} campeões diferentes</strong><p>Conquistas distribuídas em {editions.length} edições.</p><div className={styles.tags}>{ranking.filter(row => row.titles > 0).map(row => <span key={row.player.id}>{hallPlayerName(row.player)}</span>)}</div></article>
           </div>
         </section>
-        <section className={styles.section} aria-labelledby="hall-numbers"><h2 id="hall-numbers">Em Números</h2>
-          <dl className={styles.counters}>
-            <div><dt>Edições</dt><dd>{editions.length}</dd></div>
-            {organizations.map(org => <div key={org.id}><dt>Campeonatos · {org.nome}</dt><dd>{editions.filter(edition => edition.championship.organizacao.id === org.id).length}</dd></div>)}
-            <div><dt>Finalistas</dt><dd>{ranking.length}</dd></div>
-          </dl>
-          <p className={styles.note}>Finalistas são os jogadores que terminaram ao menos uma edição como campeão ou vice, incluindo ligas.</p>
+        <section className={styles.section} aria-labelledby="hall-rankings"><h2 id="hall-rankings">Rankings</h2>
+          <div className={styles.tabs} role="group" aria-label="Organização do ranking"><button aria-pressed={!organization} onClick={() => setOrganization("")}>Ranking geral</button>{organizations.map(org => <button key={org.id} aria-pressed={organization === String(org.id)} onClick={() => setOrganization(String(org.id))}>{org.nome}</button>)}</div>
+          <ol className={styles.ranking} aria-label="Ranking de campeões">{rows.map(row => <li key={row.player.id} className={styles.rankCard} data-position={row.position}>
+            <span className={styles.position} aria-label={`${row.position}º lugar`}>{row.position}</span>
+            <div className={styles.rankIdentity}><strong>{hallPlayerName(row.player)}</strong><span>{row.finals} colocações no top 2</span></div>
+            <div className={styles.rankStats}><div><b>{row.titles}</b><small>Títulos</small></div><div><b>{row.runnersUp}</b><small>Vices</small></div></div>
+          </li>)}</ol>
+          <p className={styles.note}>Ordenado por títulos e depois por vices. Jogadores com a mesma quantidade de títulos e vices dividem a posição. Top 2 soma títulos e vice-campeonatos, incluindo ligas. Apenas campeonatos finalizados com campeão identificado são contabilizados.</p>
         </section>
+
         <section className={styles.section} aria-labelledby="hall-finals"><h2 id="hall-finals">As finais</h2><p className={styles.note}>Campeões e vices por edição. Nas ligas, as colocações seguem a classificação oficial.</p>
           {organizations.map(org => <section key={org.id} className={styles.organization} aria-labelledby={`hall-org-${org.id}`}><h3 id={`hall-org-${org.id}`}><span />{org.nome}</h3><div className={styles.editions}>
             {editions.filter(edition => edition.championship.organizacao.id === org.id).map(edition => <article key={edition.championship.id} className={styles.edition}>
@@ -74,11 +76,15 @@ export default function HallOfFamePage() {
             </article>)}
           </div></section>)}
         </section>
-        <section className={styles.section} aria-labelledby="hall-rankings"><h2 id="hall-rankings">Rankings</h2>
-          <div className={styles.tabs} role="group" aria-label="Organização do ranking"><button aria-pressed={!organization} onClick={() => setOrganization("")}>Ranking geral</button>{organizations.map(org => <button key={org.id} aria-pressed={organization === String(org.id)} onClick={() => setOrganization(String(org.id))}>{org.nome}</button>)}</div>
-          <div className={styles.tableScroll} tabIndex={0} role="region" aria-label="Ranking de campeões"><table className={styles.table}><caption className="sr-only">Ranking por títulos e vice-campeonatos</caption><thead><tr><th scope="col">Pos.</th><th scope="col">Jogador</th><th scope="col">Títulos</th><th scope="col">Vices</th><th scope="col">Top 2</th></tr></thead><tbody>{rows.map(row => <tr key={row.player.id} data-podium={row.position <= 3}><td>{row.position}º</td><th scope="row">{hallPlayerName(row.player)}</th><td className={styles.titles}>{row.titles}</td><td>{row.runnersUp}</td><td>{row.finals}</td></tr>)}</tbody></table></div>
-          <p className={styles.note}>Ordenado por títulos e depois por vices. Jogadores empatados nesses critérios dividem a posição. Top 2 soma títulos e vice-campeonatos, incluindo ligas. Apenas campeonatos finalizados com campeão identificado são contabilizados.</p>
+        <section className={styles.section} aria-labelledby="hall-numbers"><h2 id="hall-numbers">Em Números</h2>
+          <dl className={styles.counters}>
+            <div><dt>Edições</dt><dd>{editions.length}</dd></div>
+            {organizations.map(org => <div key={org.id}><dt>Campeonatos · {org.nome}</dt><dd>{editions.filter(edition => edition.championship.organizacao.id === org.id).length}</dd></div>)}
+            <div><dt>Finalistas</dt><dd>{ranking.length}</dd></div>
+          </dl>
+          <p className={styles.note}>Finalistas são os jogadores que terminaram ao menos uma edição como campeão ou vice, incluindo ligas.</p>
         </section>
+
       </>}
     </>}
   </main>;

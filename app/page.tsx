@@ -16,7 +16,7 @@ export default function Home() {
       <header className="header">
         <a href="#inicio" className="brand" aria-label="Futebol Competitivo — início"><span className="brand-mark">FC<span>✦</span></span><span>FUTEBOL<strong>COMPETITIVO</strong></span></a>
 
-        <Link className="header-cta" href="/campeonatos">Acessar arena <span aria-hidden="true">↗</span></Link>
+        <Link className="header-cta" href="/hall-da-fama">Acessar arena <span aria-hidden="true">↗</span></Link>
       </header>
 
       <main id="inicio">
@@ -31,7 +31,7 @@ export default function Home() {
           </div>
 
           <div className="goal-wrap"><span className="goal-caption"><span /> PRESSIONE START NA SUA COMPETIÇÃO <span /></span><Link className="goal-button" href="/campeonatos/novo"><span className="goal-net" aria-hidden="true" /><span className="goal-label"><span className="play-icon" aria-hidden="true">▶</span> Criar campeonato <span aria-hidden="true">↗</span></span></Link><span className="goal-floor" aria-hidden="true" /><p>Da resenha entre amigos à disputa pelo título.</p></div>
-          <div className="hero-bottom"><span>DO SOFÁ PARA O HALL DA FAMA.</span><Link href="/campeonatos">ACESSE A ARENA <span aria-hidden="true">↗</span></Link><span>SEU CONTROLE. SUAS REGRAS.</span></div>
+          <div className="hero-bottom"><span>DO SOFÁ PARA O HALL DA FAMA.</span><Link href="/hall-da-fama">ACESSE A ARENA <span aria-hidden="true">↗</span></Link><span>SEU CONTROLE. SUAS REGRAS.</span></div>
         </section>
 
       </main>

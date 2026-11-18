@@ -3,15 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
-type Organization = { id: number; nome: string; ativo: boolean };
+export type Organization = { id: number; nome: string; ativo: boolean; trofeuUrl?: string | null };
 
 type Props = {
   open: boolean;
+  initial?: Organization;
+  standalone?: boolean;
   onClose: () => void;
   onCreated: (organization: Organization) => void;
 };
 
-export default function OrganizationDialog({ open, onClose, onCreated }: Props) {
+export default function OrganizationDialog({ open, onClose, onCreated, initial, standalone = false }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const form = useRef<HTMLFormElement>(null);
   const nameInput = useRef<HTMLInputElement>(null);
@@ -36,9 +38,9 @@ export default function OrganizationDialog({ open, onClose, onCreated }: Props) 
     onCancel={(event) => { if (submitting.current) event.preventDefault(); }}
     onClose={() => { setError(""); setImageError(""); setTrophy(null); setPreview(""); form.current?.reset(); onClose(); }}>
     <button type="button" className="close-dialog" aria-label="Fechar cadastro de organização" disabled={pending} onClick={() => dialog.current?.close()}>×</button>
-    <p className="eyebrow">SUA COMUNIDADE / NOVA ORGANIZAÇÃO</p>
-    <h2 id="organization-dialog-title">Crie sua organização.</h2>
-    <p>Dê um nome à sua liga ou comunidade. Ela será cadastrada como ativa e selecionada neste campeonato.</p>
+    <p className="eyebrow">SUA COMUNIDADE / ORGANIZAÇÕES</p>
+    <h2 id="organization-dialog-title">{initial ? "Editar organização" : "Crie sua organização."}</h2>
+    <p>{initial ? "Atualize o nome e a imagem do troféu da organização." : standalone ? "Cadastre sua liga ou comunidade com uma imagem de troféu opcional." : "Dê um nome à sua liga ou comunidade. Ela será cadastrada como ativa e selecionada neste campeonato."}</p>
     <form ref={form} onSubmit={async (event) => {
       event.preventDefault();
       if (submitting.current) return;
@@ -49,23 +51,24 @@ export default function OrganizationDialog({ open, onClose, onCreated }: Props) 
       setPending(true);
       setError("");
       try {
-        let body: string | FormData = JSON.stringify({ nome });
+        let body: string | FormData = JSON.stringify({ nome, ativo: initial?.ativo ?? true });
         if (trophy) {
           body = new FormData();
           body.append("nome", nome);
+          body.append("ativo", String(initial?.ativo ?? true));
           body.append("trofeu", trophy, trophy.name);
         }
-        const response = await fetch("/api/organizacoes", { method: "POST", headers: trophy ? undefined : { "Content-Type": "application/json" }, body });
+        const response = await fetch(initial ? `/api/organizacoes/${initial.id}` : "/api/organizacoes", { method: initial ? "PUT" : "POST", headers: trophy ? undefined : { "Content-Type": "application/json" }, body });
         const result = await response.json();
         if (!response.ok) throw new Error([result.detail, ...Object.values(result.erros || {})].filter(Boolean).join(" ") || "Não foi possível cadastrar a organização.");
-        if (!Number.isSafeInteger(result.id) || result.id <= 0 || typeof result.nome !== "string" || result.ativo !== true) throw new Error("A API não confirmou uma organização ativa válida. Consulte os cadastros antes de tentar novamente.");
+        if (!Number.isSafeInteger(result.id) || result.id <= 0 || typeof result.nome !== "string" || typeof result.ativo !== "boolean") throw new Error("A API não confirmou uma organização ativa válida. Consulte os cadastros antes de tentar novamente.");
         onCreated(result);
         dialog.current?.close();
       } catch (cause) { setError(cause instanceof Error ? cause.message : "Não foi possível confirmar o cadastro. Verifique sua conexão."); }
       finally { submitting.current = false; setPending(false); }
     }}>
       <label htmlFor="organization-name">Nome da organização</label>
-      <input ref={nameInput} id="organization-name" name="nome" placeholder="Ex.: Liga dos Amigos" required maxLength={255} pattern=".*\S.*" disabled={pending} autoFocus />
+      <input ref={nameInput} id="organization-name" name="nome" defaultValue={initial?.nome || ""} placeholder="Ex.: Liga dos Amigos" required maxLength={255} pattern=".*\S.*" disabled={pending} autoFocus />
       <label htmlFor="organization-trophy">Imagem do troféu (opcional)</label>
       <input id="organization-trophy" type="file" accept="image/png,image/svg+xml,.png,.svg" disabled={pending} aria-describedby="organization-trophy-help" onChange={event => {
         const file = event.target.files?.[0];
