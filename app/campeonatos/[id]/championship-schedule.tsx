@@ -28,6 +28,7 @@ export type SchedulePhase = {
     folgaParticipanteId: number | null;
     partidas: {
       id: number;
+      youtubeUrl?: string | null;
       mandante: Participant;
       visitante: Participant;
       status: string;

@@ -1,3 +1,4 @@
+import { validateYoutube } from "../../../../../auth/youtube";
 import { jsonBody, validId, x1Request } from "../../../../upstream";
 export async function PUT(request: Request, context: { params: Promise<{ id: string; partidaId: string }> }) {
   const { id, partidaId } = await context.params;
@@ -15,6 +16,8 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
   if (!tied && hasPenalties) {
     return Response.json({ detail: "Informe pênaltis somente em partidas empatadas." }, { status: 400 });
   }
-  return x1Request(`/${id}/partidas/${partidaId}/resultado`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ golsMandante: data.golsMandante, golsVisitante: data.golsVisitante, penaltisMandante: data.penaltisMandante ?? null, penaltisVisitante: data.penaltisVisitante ?? null, golDeOuro: false }) });
+  const youtubeError = await validateYoutube(request, data, "x1", id, partidaId);
+  if (youtubeError) return youtubeError;
+  return x1Request(`/${id}/partidas/${partidaId}/resultado`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...("youtubeUrl" in data ? { youtubeUrl: data.youtubeUrl || null } : {}), golsMandante: data.golsMandante, golsVisitante: data.golsVisitante, penaltisMandante: data.penaltisMandante ?? null, penaltisVisitante: data.penaltisVisitante ?? null, golDeOuro: false }) });
 }
 

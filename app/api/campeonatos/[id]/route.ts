@@ -1,4 +1,15 @@
 import { championshipRequest, type ChampionshipContext } from "../upstream";
+import { cookies } from "next/headers";
+import { sameOrigin, sessionCookie, sessionUser } from "../../auth/session";
+
+export async function DELETE(request: Request, { params }: ChampionshipContext) {
+  if (!sameOrigin(request)) return Response.json({ detail: "Origem inválida." }, { status: 403 });
+  const token = (await cookies()).get(sessionCookie)?.value;
+  const user = token ? sessionUser(token) : null;
+  if (!user) return Response.json({ detail: "Entre na sua conta para continuar." }, { status: 401 });
+  if (!user.isAdmin) return Response.json({ detail: "Somente administradores podem apagar campeonatos." }, { status: 403 });
+  return championshipRequest((await params).id, { method: "DELETE" });
+}
 
 export async function GET(_request: Request, { params }: ChampionshipContext) {
   return championshipRequest((await params).id);

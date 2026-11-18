@@ -65,10 +65,12 @@ As credenciais são privadas do servidor Next.js. Mantenha os nomes sem
 `.env.example` como referência. Informe as duas credenciais juntas.
 
 O backend atual autentica o cliente via HTTP Basic em
-`FUTCOMPETITIVO_API_URL/oauth2/token`, usando `grant_type=password` e as
-credenciais do usuário. Estas variáveis preparam a configuração do cliente OAuth2.
-A tela de login, a sessão e o envio do token Bearer nas chamadas à API ainda
-precisam ser implementados. `JWT_JWK` e `JWT_ISSUER` são configurações do backend.
+`FUTCOMPETITIVO_API_URL/oauth2/token`, usando
+`grant_type=urn:futcompetitivo:params:oauth:grant-type:password` e as credenciais
+do usuário. A opção Entrar no menu da Arena abre a modal de login. Após entrar,
+o menu exibe o primeiro nome e a opção Sair, que chama `/auth/logout` no backend.
+O token é mantido em cookie HttpOnly até sua expiração e enviado pelo servidor
+Next.js nas chamadas à API. `JWT_JWK` e `JWT_ISSUER` são configurações do backend.
 
 A página `/campeonatos/novo` usa `GET /organizacoes`, `GET /jogadores`, `GET /equipes` e
 `POST /campeonatos` da API Java. Inicie a API antes de preencher o formulário.

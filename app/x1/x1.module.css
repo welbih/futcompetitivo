@@ -8,6 +8,14 @@
 .dialog { width:min(540px,calc(100% - 32px)); }.fields .check { display:flex; align-items:center; gap:10px; line-height:1.7; }.fields .check input { width:16px; height:16px; accent-color:var(--gold); flex-shrink:0; }.scoreInputs { display:grid; grid-template-columns:minmax(0,1fr) 20px minmax(0,1fr); align-items:end; gap:12px; }.scoreInputs>span { padding-bottom:15px; text-align:center; color:var(--gold); }.scoreInputs label { overflow-wrap:anywhere; line-height:1.5; }.scoreInputs small { display:block; color:var(--muted); margin:5px 0; font-size:10px; }.scoreInputs input { display:block; margin-top:8px; text-align:center; font-size:22px; }
 @media(max-width:1100px) { .grid { grid-template-columns:1fr; } } @media(max-width:650px) { .banner { align-items:start; flex-direction:column; padding:24px; }.banner h2 { font-size:25px; }.stats { width:100%; justify-content:space-between; }.stats strong { font-size:32px; }.search { margin-left:0; flex:1; }.search input { width:100%; }.card { padding:18px; }.score strong { font-size:30px; }.score small { margin:0 7px; } }
 .matchDetails { flex:1; min-width:0; }
+.match { position:relative; }
+.watchMatch { display:inline-block; margin-top:8px; color:var(--cyan); font-size:12px; }
+.watchMatch::after { content:""; position:absolute; inset:0; }
+.watchMatch:hover { text-decoration:underline; }
+.watchMatch:focus-visible::after { outline:2px solid var(--cyan); outline-offset:2px; border-radius:6px; }
+.match:has(.watchMatch) > button { position:relative; z-index:1; }
+.card { position:relative; }
+.card:has(:global(.championship-card-menu)) .cardHeader { padding-right:38px; }
 .matchScore { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:center; gap:10px; margin:14px 0; }
 .opponent { display:grid; grid-template-columns:44px minmax(0,1fr); align-items:center; gap:8px; text-align:right; min-width:0; font-size:12px; font-weight:700; line-height:1.5; }
 .opponent > span:last-child { overflow-wrap:anywhere; }

@@ -2,17 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import ArenaLogin from "./arena-login";
 
 const items = [
   { label: "Campeonato", href: "/campeonatos", icon: "cup" },
   { label: "X1", href: "/x1", icon: "duel" },
+  { label: "Hall da Fama", href: "/hall-da-fama", icon: "star" },
   { label: "Jogador", href: "/jogadores", icon: "player" },
   { label: "Equipe", href: "/equipes", icon: "team" },
 ];
 
 function MenuIcon({ type }: { type: string }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    {type === "duel" ? <><path d="m4 3 17 17m-1-17L3 20M3 3l1 5 4-4-5-1Zm18 0-1 5-4-4 5-1ZM2 17l5 5m10 0 5-5" /></> : type === "player" ? <><circle cx="12" cy="7" r="4" /><path d="M4 21v-2a8 8 0 0 1 16 0v2" /></> : type === "team" ? <><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z" /><path d="m9 12 2 2 4-4" /></> : <><path d="M7 3h10v6a5 5 0 0 1-10 0V3ZM7 5H3v3a4 4 0 0 0 4 4m10-7h4v3a4 4 0 0 1-4 4M12 14v5m-4 2h8m-6-2h4" /></>}
+    {type === "star" ? <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z" /> : type === "duel" ? <><path d="m4 3 17 17m-1-17L3 20M3 3l1 5 4-4-5-1Zm18 0-1 5-4-4 5-1ZM2 17l5 5m10 0 5-5" /></> : type === "player" ? <><circle cx="12" cy="7" r="4" /><path d="M4 21v-2a8 8 0 0 1 16 0v2" /></> : type === "team" ? <><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z" /><path d="m9 12 2 2 4-4" /></> : <><path d="M7 3h10v6a5 5 0 0 1-10 0V3ZM7 5H3v3a4 4 0 0 0 4 4m10-7h4v3a4 4 0 0 1-4 4M12 14v5m-4 2h8m-6-2h4" /></>}
   </svg>;
 }
 
@@ -28,6 +30,7 @@ export default function Sidebar({ collapsed, onToggle }: { collapsed: boolean; o
       const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
       return <li key={item.href}><Link href={item.href} className={`sidebar-link${active ? " is-active" : ""}`} aria-current={active ? "page" : undefined} aria-label={item.label} title={collapsed ? item.label : undefined}><MenuIcon type={item.icon} /><span>{item.label}</span></Link></li>;
     })}</ul></nav>
+    <ArenaLogin />
     <span className="sidebar-footer"><i /> FUTEBOL VIRTUAL.<br />RIVALIDADE REAL.</span>
   </aside>;
 }

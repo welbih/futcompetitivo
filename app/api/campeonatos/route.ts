@@ -1,8 +1,4 @@
-const apiUrl = () => (process.env.FUTCOMPETITIVO_API_URL || "http://localhost:8080").replace(/\/$/, "");
-
-async function upstream(path: string, init?: RequestInit) {
-  return fetch(`${apiUrl()}${path}`, { ...init, cache: "no-store", signal: AbortSignal.timeout(15000) });
-}
+import { apiFetch as upstream } from "../auth/session";
 
 export async function GET() {
   try {

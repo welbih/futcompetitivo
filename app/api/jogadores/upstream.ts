@@ -1,7 +1,8 @@
+import { apiFetch } from "../auth/session";
+
 export async function playerRequest(path = "", init?: RequestInit) {
   try {
-    const base = (process.env.FUTCOMPETITIVO_API_URL || "http://localhost:8080").replace(/\/$/, "");
-    const response = await fetch(`${base}/jogadores${path}`, { ...init, cache: "no-store", signal: AbortSignal.timeout(15000) });
+    const response = await apiFetch(`/jogadores${path}`, { ...init, cache: "no-store", signal: AbortSignal.timeout(15000) });
     if (response.status === 204) return new Response(null, { status: 204 });
     const data = await response.json();
     return Response.json(data, { status: response.status });

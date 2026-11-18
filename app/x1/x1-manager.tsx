@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { validYoutubeUrl } from "../components/youtube-url";
+import ChampionshipDeleteMenu from "../components/championship-delete-menu";
+import { useAdminPermission } from "../components/use-admin-permission";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import ui from "../jogadores/players.module.css";
@@ -10,7 +13,7 @@ type Player = { id: number; nome: string; apelido: string | null; ativo: boolean
 type Team = { id: number; nome: string; logoUrl: string; ativo: boolean };
 type Participant = { id: number; jogador: Player; equipe: Team; ativo: boolean };
 type Result = { golsMandante: number; golsVisitante: number; penaltisMandante: number | null; penaltisVisitante: number | null };
-type Match = { id: number; numero: number; mandante: Participant; visitante: Participant; status: "AGENDADA" | "FINALIZADA" | "CANCELADA"; resultado: Result | null };
+type Match = { youtubeUrl?: string | null; id: number; numero: number; mandante: Participant; visitante: Participant; status: "AGENDADA" | "FINALIZADA" | "CANCELADA"; resultado: Result | null };
 type Duel = { id: number; participanteUm: Participant; participanteDois: Participant; tipo: "MELHOR_DE_TRES" | "MELHOR_DE_CINCO"; encerrarAntecipadamente: boolean; status: "EM_ANDAMENTO" | "FINALIZADO"; vitoriasParticipanteUm: number; vitoriasParticipanteDois: number; vencedor: Participant | null; partidas: Match[] };
 type Action = { kind: "create" } | { kind: "result"; duel: Duel; match: Match } | { kind: "finish"; duel: Duel };
 const name = (value: Player | Participant): string => "jogador" in value ? `${name(value.jogador)} · ${value.equipe.nome}` : value.apelido?.trim() || value.nome;
@@ -35,6 +38,8 @@ async function read(response: Response) {
 }
 
 function ActionDialog({ action, onClose, onSaved }: { action: Action; onClose: () => void; onSaved: (duel: Duel) => void }) {
+  const isAdmin = useAdminPermission();
+  const [youtubeUrl, setYoutubeUrl] = useState(action.kind === "result" ? action.match.youtubeUrl || "" : "");
   const dialog = useRef<HTMLDialogElement>(null);
   const lock = useRef(false);
   const [pending, setPending] = useState(false);
@@ -80,10 +85,11 @@ function ActionDialog({ action, onClose, onSaved }: { action: Action; onClose: (
         setError("Informe um vencedor nos pênaltis para salvar o resultado.");
         return;
       }
+      if (action.kind === "result" && isAdmin && !validYoutubeUrl(youtubeUrl.trim())) { setError("Informe um endereço válido do YouTube."); return; }
       lock.current = true; setPending(true); setError("");
       try {
         const path = action.kind === "create" ? "/api/x1" : action.kind === "finish" ? `/api/x1/${action.duel.id}/encerrar` : `/api/x1/${action.duel.id}/partidas/${action.match.id}/resultado`;
-        const body = action.kind === "create" ? { participanteUm: { jogadorId: Number(one), equipeId: Number(teamOne) }, participanteDois: { jogadorId: Number(two), equipeId: Number(teamTwo) }, tipo: type, encerrarAntecipadamente: early } : action.kind === "result" ? { golsMandante: Number(home), golsVisitante: Number(away), penaltisMandante: tied && homePens !== "" ? Number(homePens) : null, penaltisVisitante: tied && awayPens !== "" ? Number(awayPens) : null } : null;
+        const body = action.kind === "create" ? { participanteUm: { jogadorId: Number(one), equipeId: Number(teamOne) }, participanteDois: { jogadorId: Number(two), equipeId: Number(teamTwo) }, tipo: type, encerrarAntecipadamente: early } : action.kind === "result" ? { ...(isAdmin ? { youtubeUrl: youtubeUrl.trim() || null } : {}), golsMandante: Number(home), golsVisitante: Number(away), penaltisMandante: tied && homePens !== "" ? Number(homePens) : null, penaltisVisitante: tied && awayPens !== "" ? Number(awayPens) : null } : null;
         const data = await read(await fetch(path, { method: action.kind === "result" ? "PUT" : "POST", ...(body ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}) }));
         if (!data || !Number.isSafeInteger(data.id) || !Array.isArray(data.partidas)) throw new Error("A API não confirmou a operação. Atualize a listagem antes de tentar novamente.");
         onSaved(data); onClose();
@@ -104,6 +110,7 @@ function ActionDialog({ action, onClose, onSaved }: { action: Action; onClose: (
           <label className={styles.check}><input type="checkbox" checked={early} onChange={(event) => setEarly(event.target.checked)} /> Encerrar ao atingir as vitórias necessárias</label><p className={ui.description}>O mando alterna a cada partida. Com a opção desmarcada, todas as partidas serão disputadas.</p>
         </> : action.kind === "finish" ? <p className={ui.description}>A série entre <strong>{name(action.duel.participanteUm)}</strong> e <strong>{name(action.duel.participanteDois)}</strong> já tem um vencedor definido. As partidas restantes serão canceladas.</p> : <>
           <p className={ui.description}>Registre o placar respeitando o mando desta partida.</p>
+          {isAdmin && <><label htmlFor="x1-youtube">Link do YouTube</label><input id="x1-youtube" type="url" maxLength={2048} value={youtubeUrl} onChange={event => setYoutubeUrl(event.target.value)} placeholder="https://www.youtube.com/watch?v=..." /></>}
           <div className={styles.scoreInputs}><label htmlFor="x1-home">{name(action.match.mandante)}<small>Mandante</small><input id="x1-home" type="number" min="0" max="2147483647" required value={home} onChange={(event) => setHome(event.target.value)} /></label><span>×</span><label htmlFor="x1-away">{name(action.match.visitante)}<small>Visitante</small><input id="x1-away" type="number" min="0" max="2147483647" required value={away} onChange={(event) => setAway(event.target.value)} /></label></div>
           {tied && <>
             <p id="x1-penalty-hint" className={ui.description}>Placar empatado. Preencha os dois campos de pênaltis com valores diferentes para definir o vencedor.</p>
@@ -125,6 +132,7 @@ function ActionDialog({ action, onClose, onSaved }: { action: Action; onClose: (
 }
 
 export default function X1Manager() {
+  const isAdmin = useAdminPermission();
   const [duels, setDuels] = useState<Duel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -158,12 +166,21 @@ export default function X1Manager() {
       const next = matches.find((match) => match.status === "AGENDADA");
       const majority = duel.tipo === "MELHOR_DE_TRES" ? 2 : 3;
       const winner = duel.status === "FINALIZADO" ? duel.vencedor : null;
-      return <article key={duel.id} className={styles.card}><div className={styles.cardHeader}><span className="eyebrow">X1 #{duel.id} · {format(duel)}</span><span className={duel.status === "FINALIZADO" ? styles.finished : styles.live}>{duel.status === "FINALIZADO" ? "Finalizado" : "Em andamento"}</span></div>
+      return <article key={duel.id} className={styles.card}>
+        {isAdmin && <ChampionshipDeleteMenu resource="x1" id={duel.id}
+          name={`X1 #${duel.id} · ${name(duel.participanteUm)} contra ${name(duel.participanteDois)}`}
+          onDeleted={() => {
+            setDuels(previous => previous.filter(item => item.id !== duel.id));
+            setSelected(current => current === duel.id ? null : current);
+            setAction(current => current && "duel" in current && current.duel.id === duel.id ? null : current);
+            setNotice("X1 apagado com sucesso.");
+          }} />}
+        <div className={styles.cardHeader}><span className="eyebrow">X1 #{duel.id} · {format(duel)}</span><span className={duel.status === "FINALIZADO" ? styles.finished : styles.live}>{duel.status === "FINALIZADO" ? "Finalizado" : "Em andamento"}</span></div>
         <div className={styles.versus}><div className={`${styles.participant}${winner?.id === duel.participanteUm.id ? ` ${styles.winningPlayer}` : ""}`} aria-label={winner?.id === duel.participanteUm.id ? `Vencedor: ${name(duel.participanteUm)}` : undefined}><span className={styles.avatar}>{name(duel.participanteUm).slice(0, 2).toUpperCase()}</span><h3>{name(duel.participanteUm)}</h3></div><div className={styles.score}><strong>{duel.vitoriasParticipanteUm}<small>:</small>{duel.vitoriasParticipanteDois}</strong><span>VITÓRIAS</span></div><div className={`${styles.participant}${winner?.id === duel.participanteDois.id ? ` ${styles.winningPlayer}` : ""}`} aria-label={winner?.id === duel.participanteDois.id ? `Vencedor: ${name(duel.participanteDois)}` : undefined}><span className={styles.avatar}>{name(duel.participanteDois).slice(0, 2).toUpperCase()}</span><h3>{name(duel.participanteDois)}</h3></div></div>
         <div className={styles.progress} aria-label="Progresso das partidas">{matches.map((match) => <span key={match.id} data-status={match.status} title={`Partida ${match.numero}: ${match.status === "FINALIZADA" ? "finalizada" : match.status === "CANCELADA" ? "cancelada" : "agendada"}`} />)}</div>
         {!winner && <p className={styles.summary}>{duel.status === "FINALIZADO" ? "Série encerrada · empate" : `Próxima: partida ${next?.numero ?? "—"} · ${majority} vitórias para vencer`}</p>}
         <div className={styles.actions}><button className={ui.secondary} aria-expanded={expanded} aria-controls={`x1-matches-${duel.id}`} onClick={() => setSelected(expanded ? null : duel.id)}>{expanded ? "Recolher partidas ↑" : "Acompanhar série ↓"}</button>{next && <button className={ui.primary} onClick={() => setAction({ kind: "result", duel, match: next })}>Incluir resultado</button>}</div>
-        {expanded && <section id={`x1-matches-${duel.id}`} className={styles.matches} aria-label={`Partidas do X1 ${duel.id}`}><p className={ui.description}>{duel.encerrarAntecipadamente ? "Encerramento automático ao atingir a maioria das vitórias." : "Todas as partidas serão disputadas, salvo encerramento antecipado."}</p>{matches.map((match) => <div key={match.id} className={styles.match}><div className={styles.matchDetails}><small>PARTIDA {match.numero} · {match.status === "CANCELADA" ? "Cancelada" : match.status === "FINALIZADA" ? "Finalizada" : "Agendada"}</small><div className={styles.matchScore}><MatchOpponent participant={match.mandante} /><strong>{match.resultado ? `${match.resultado.golsMandante} × ${match.resultado.golsVisitante}` : "×"}</strong><MatchOpponent participant={match.visitante} away /></div>{match.resultado?.penaltisMandante != null && <small>Pênaltis: {match.resultado.penaltisMandante} × {match.resultado.penaltisVisitante}</small>}</div>{match.status !== "CANCELADA" && (match.status === "FINALIZADA" || match.id === next?.id) && <button className={ui.secondary} onClick={() => setAction({ kind: "result", duel, match })}>{match.resultado ? "Editar" : "Registrar"}</button>}</div>)}{duel.status === "EM_ANDAMENTO" && Math.max(duel.vitoriasParticipanteUm, duel.vitoriasParticipanteDois) >= majority && <button className={ui.primary} onClick={() => setAction({ kind: "finish", duel })}>Encerrar série antecipadamente</button>}</section>}
+        {expanded && <section id={`x1-matches-${duel.id}`} className={styles.matches} aria-label={`Partidas do X1 ${duel.id}`}><p className={ui.description}>{duel.encerrarAntecipadamente ? "Encerramento automático ao atingir a maioria das vitórias." : "Todas as partidas serão disputadas, salvo encerramento antecipado."}</p>{matches.map((match) => <div key={match.id} className={styles.match}><div className={styles.matchDetails}><small>PARTIDA {match.numero} · {match.status === "CANCELADA" ? "Cancelada" : match.status === "FINALIZADA" ? "Finalizada" : "Agendada"}</small><div className={styles.matchScore}><MatchOpponent participant={match.mandante} /><strong>{match.resultado ? `${match.resultado.golsMandante} × ${match.resultado.golsVisitante}` : "×"}</strong><MatchOpponent participant={match.visitante} away /></div>{match.resultado?.penaltisMandante != null && <small>Pênaltis: {match.resultado.penaltisMandante} × {match.resultado.penaltisVisitante}</small>}{match.youtubeUrl && validYoutubeUrl(match.youtubeUrl) && <a className={styles.watchMatch} href={match.youtubeUrl} target="_blank" rel="noopener noreferrer" title={match.youtubeUrl}>▶ Assistir partida</a>}</div>{match.status !== "CANCELADA" && (match.status === "FINALIZADA" || match.id === next?.id) && <button className={ui.secondary} onClick={() => setAction({ kind: "result", duel, match })}>{match.resultado ? "Editar" : "Registrar"}</button>}</div>)}{duel.status === "EM_ANDAMENTO" && Math.max(duel.vitoriasParticipanteUm, duel.vitoriasParticipanteDois) >= majority && <button className={ui.primary} onClick={() => setAction({ kind: "finish", duel })}>Encerrar série antecipadamente</button>}</section>}
       </article>;
     })}</div>}
     {action && <ActionDialog action={action} onClose={() => setAction(null)} onSaved={(duel) => { setDuels((previous) => [...previous.filter((item) => item.id !== duel.id), duel]); setSelected(duel.id); setNotice(action.kind === "create" ? "X1 criado. A arena está pronta!" : action.kind === "finish" ? "Série encerrada com sucesso." : "Resultado salvo e placar da série atualizado."); }} />}

@@ -4,9 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import type { Championship } from "../novo/championship-form";
 import type { SchedulePhase } from "./championship-schedule";
 
+import { useAdminPermission } from "../../components/use-admin-permission";
+import { validYoutubeUrl } from "../../components/youtube-url";
+
 type Match = SchedulePhase["rodadas"][number]["partidas"][number];
 
 export default function MatchResultDialog({ championshipId, match, knockout = false, saveWithoutFinalizingRound, onClose, onSaved }: { championshipId: number; knockout?: boolean; saveWithoutFinalizingRound?: { roundId: number }; match: Match; onClose: () => void; onSaved: (championship: Championship) => void }) {
+  const isAdmin = useAdminPermission();
+  const [youtubeUrl, setYoutubeUrl] = useState(match.youtubeUrl || "");
   const dialog = useRef<HTMLDialogElement>(null);
   const submitting = useRef(false);
   const [homeScore, setHomeScore] = useState(match.resultado ? String(match.resultado.golsMandante) : "");
@@ -27,9 +32,10 @@ export default function MatchResultDialog({ championshipId, match, knockout = fa
     <form onSubmit={async (event) => {
       event.preventDefault();
       if (!valid || submitting.current) return;
+      if (isAdmin && !validYoutubeUrl(youtubeUrl.trim())) { setError("Informe um endereço válido do YouTube."); return; }
       submitting.current = true; setPending(true); setError("");
       try {
-        const score = { golsMandante: Number(homeScore), golsVisitante: Number(awayScore), ...(tied ? { penaltisMandante: Number(homePenalties), penaltisVisitante: Number(awayPenalties) } : {}) };
+        const score = { ...(isAdmin && !saveWithoutFinalizingRound ? { youtubeUrl: youtubeUrl.trim() || null } : {}), golsMandante: Number(homeScore), golsVisitante: Number(awayScore), ...(tied ? { penaltisMandante: Number(homePenalties), penaltisVisitante: Number(awayPenalties) } : {}) };
         const url = saveWithoutFinalizingRound ? `/api/campeonatos/${championshipId}/rodadas/${saveWithoutFinalizingRound.roundId}/resultados` : `/api/campeonatos/${championshipId}/partidas/${match.id}/resultado`;
         const body = saveWithoutFinalizingRound ? { resultados: [{ partidaId: match.id, resultado: score }] } : score;
         const response = await fetch(url, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -46,6 +52,7 @@ export default function MatchResultDialog({ championshipId, match, knockout = fa
         <div><label htmlFor="away-score"><strong>{match.visitante.jogador.apelido || match.visitante.jogador.nome}</strong><span>{match.visitante.equipe.nome}</span></label><input id="away-score" name="golsVisitante" type="number" min="0" max="2147483647" step="1" inputMode="numeric" required value={awayScore} onChange={(event) => { if (/^\d*$/.test(event.target.value)) setAwayScore(event.target.value); }} onKeyDown={(event) => { if (["-", "+", "e", "E", ".", ","].includes(event.key)) event.preventDefault(); }} /></div>
       </fieldset>
       {tied && <fieldset className="score-fields penalty-score-fields" disabled={pending}><legend>Disputa de pênaltis</legend>{[{ name: match.mandante.jogador.apelido || match.mandante.jogador.nome, value: homePenalties, change: setHomePenalties }, { name: match.visitante.jogador.apelido || match.visitante.jogador.nome, value: awayPenalties, change: setAwayPenalties }].map((side, index) => <div key={index}><label htmlFor={`penalties-${index}`}>Pênaltis — {side.name}</label><input id={`penalties-${index}`} name={index === 0 ? "penaltisMandante" : "penaltisVisitante"} inputMode="numeric" type="number" min="0" max="2147483647" step="1" required value={side.value} onChange={(event) => { if (/^\d*$/.test(event.target.value)) side.change(event.target.value); }} onKeyDown={(event) => { if (["-", "+", "e", "E", ".", ","].includes(event.key)) event.preventDefault(); }} /></div>)}</fieldset>}
+      {isAdmin && !saveWithoutFinalizingRound && <><label htmlFor="match-youtube">Link do YouTube</label><input id="match-youtube" type="url" maxLength={2048} value={youtubeUrl} disabled={pending} onChange={event => setYoutubeUrl(event.target.value)} placeholder="https://www.youtube.com/watch?v=..." /></>}
       {error && <p role="alert" className="form-error">{error}</p>}
       <div className="organization-dialog-actions"><button type="button" className="retry-button" disabled={pending} onClick={() => dialog.current?.close()}>Cancelar</button><button type="submit" className="form-submit" disabled={!valid || pending}>{pending ? "Salvando…" : "Salvar placar ↗"}</button></div>
       {pending && <p role="status">Salvando resultado…</p>}
