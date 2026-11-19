@@ -11,7 +11,7 @@ import { validYoutubeUrl } from "../../components/youtube-url";
 import styles from "./line-bracket.module.css";
 
 type Match = SchedulePhase["rodadas"][number]["partidas"][number];
-type Props = { organization: { id: number; nome: string; trofeuUrl?: string | null }; phase: SchedulePhase; participants: Participant[]; editable: boolean; isAdmin: boolean; onSelect: (match: Match) => void; Logo: ComponentType<{ participant: Participant }> };
+type Props = { twoSided?: boolean; organization: { id: number; nome: string; trofeuUrl?: string | null }; phase: SchedulePhase; participants: Participant[]; editable: boolean; isAdmin: boolean; onSelect: (match: Match) => void; Logo: ComponentType<{ participant: Participant }> };
 
 function totals(tie: KnockoutTie, sides: (Participant | null)[]) {
   const scores = [0, 0];
@@ -28,10 +28,10 @@ function totals(tie: KnockoutTie, sides: (Participant | null)[]) {
   });
 }
 
-export default function LineBracket({ organization, phase, participants, editable, isAdmin, onSelect, Logo }: Props) {
+export default function LineBracket({ organization, phase, participants, editable, isAdmin, onSelect, Logo, twoSided = false }: Props) {
   const [failedTrophy, setFailedTrophy] = useState<string | null>(null);
   const trophySource = organization.trofeuUrl ? `/api/organizacoes/${organization.id}/trofeu` : null;
-  const layout = lineBracketLayout(phase, participants, !!trophySource);
+  const layout = lineBracketLayout(phase, participants, !!trophySource, twoSided);
   const eliminated = new Set<number>();
   for (const tie of knockoutTies(phase)) {
     if (tie.terceiroLugar || tie.etapa?.codigo === "TERCEIRO_LUGAR") continue;

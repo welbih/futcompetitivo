@@ -38,6 +38,7 @@ function Logo({ participant }: { participant: Participant }) {
 }
 export default function KnockoutBracket({ championship, onUpdated, embedded = false }: { embedded?: boolean; championship: Championship; onUpdated: (updated: Championship) => void }) {
   const isAdmin = useAdminPermission();
+  const [twoSided, setTwoSided] = useState(false);
   const [layoutStyle, setLayoutStyle] = useState<"cards" | "lines">("cards");
   const [view, setView] = useState<"bracket" | "scorers">("bracket");
   const [selected, setSelected] = useState<Match | null>(null);
@@ -164,7 +165,7 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
         labels.set(tie.id, tie.etapa?.nome || "Disputa de terceiro lugar");
       }
       if (layoutStyle !== "cards") {
-        const lineLayout = lineBracketLayout(phase, championship.participantes, !!championship.organizacao.trofeuUrl);
+        const lineLayout = lineBracketLayout(phase, championship.participantes, !!championship.organizacao.trofeuUrl, twoSided);
         width = lineLayout.width;
         height = lineLayout.height;
       }
@@ -185,6 +186,10 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
             <button type="button" aria-pressed={layoutStyle === "cards"} onClick={() => setLayoutStyle("cards")}>Cards</button>
             <button type="button" aria-pressed={layoutStyle === "lines"} onClick={() => setLayoutStyle("lines")}>Linhas</button>
           </div>
+          {layoutStyle === "lines" && championship.participantes.length <= 8 && <div className={styles.layoutOptions} role="group" aria-label="Distribuição do chaveamento">
+            <button type="button" aria-pressed={!twoSided} onClick={() => setTwoSided(false)}>Lado único</button>
+            <button type="button" aria-pressed={twoSided} onClick={() => setTwoSided(true)}>Dois lados</button>
+          </div>}
           <div className={styles.zoomControls} role="group" aria-label="Zoom do chaveamento">
             {[-1, 1].map(step => {
               const label = step < 0 ? "Diminuir zoom" : "Aumentar zoom";
@@ -206,7 +211,7 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
             if (node) brackets.current.set(phase.id, node);
             else brackets.current.delete(phase.id);
           }}>
-          {layoutStyle !== "cards" ? <LineBracket organization={championship.organizacao} phase={phase} participants={championship.participantes} editable={editable} isAdmin={isAdmin} onSelect={setSelected} Logo={Logo} /> : <>
+          {layoutStyle !== "cards" ? <LineBracket twoSided={twoSided} organization={championship.organizacao} phase={phase} participants={championship.participantes} editable={editable} isAdmin={isAdmin} onSelect={setSelected} Logo={Logo} /> : <>
           <svg width={width} height={height} className={styles.lines} aria-hidden="true">{visibleTies.flatMap(tie=>[tie.origemUmId,tie.origemDoisId].map(id=> {
             if (id == null || !visibleIds.has(id)) return null;
             const parent = id == null ? undefined : positions.get(id); const child = positions.get(tie.id);

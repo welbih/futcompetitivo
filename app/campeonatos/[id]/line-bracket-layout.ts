@@ -7,13 +7,13 @@ export type LinePoint = { x: number; y: number };
 export type LineLeaf = LinePoint & { participant: Participant | null; right: boolean; key: string };
 export type LineGame = LinePoint & { tie: KnockoutTie; right: boolean; inputs: LinePoint[]; sides: (Participant | null)[] };
 
-export function lineBracketLayout(phase: SchedulePhase, participants: Participant[], withTrophy = false) {
+export function lineBracketLayout(phase: SchedulePhase, participants: Participant[], withTrophy = false, twoSided = false) {
   const ties = knockoutTies(phase);
   const main = ties.filter(tie => !tie.terceiroLugar && tie.etapa?.codigo !== "TERCEIRO_LUGAR");
   const final = main.find(tie => tie.etapa?.codigo === "FINAL") || main.at(-1);
   const bronze = ties.find(tie => tie.terceiroLugar || tie.etapa?.codigo === "TERCEIRO_LUGAR");
   const byId = new Map(ties.map(tie => [tie.id, tie]));
-  const split = participants.length > 8;
+  const split = participants.length > 8 || twoSided;
   const scoreWidth = Math.max(64, ...ties.map(tie => {
     const goals = tie.partidas.reduce((sum, match) => sum + (match.resultado?.golsMandante || 0) + (match.resultado?.golsVisitante || 0), 0);
     const penalties = tie.partidas.at(-1)?.resultado;
