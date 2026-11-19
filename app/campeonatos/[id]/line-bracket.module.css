@@ -53,3 +53,8 @@
 .finalScore b { font-size:20px; color:var(--muted); }
 .finalScore b[data-winner=true] { color:var(--gold); }
 .finalScore > span { color:var(--muted); font-size:13px; }
+.legScore { display:grid; gap:5px; text-align:center; }
+.legScore > small { color:var(--muted); font-size:10px; }
+.legScore > div { display:flex; align-items:center; gap:7px; }
+.legScore > div > span { color:var(--muted); font-size:13px; }
+.legScore + .legScore { border-left:1px solid var(--line); padding-left:10px; }

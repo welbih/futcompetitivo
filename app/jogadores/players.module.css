@@ -31,3 +31,15 @@
 .card { background:transparent; border:0; border-radius:0; box-shadow:none; padding-top:18px; }
 .cardActions { border-top:0; margin-top:12px; padding-top:0; }
 .card .playerFullName { margin:14px 0 10px; color:var(--text); font-size:14px; font-weight:600; line-height:1.6; }
+.statisticsShirt { display:block; border-radius:12px; }
+.statisticsLink { display:inline-flex; align-items:center; justify-content:center; gap:12px; min-height:44px; padding:10px 18px; margin-bottom:10px; border:1px solid #f5c54250; border-radius:999px; color:var(--gold-light); font-size:13px; }
+.statisticsLink:hover { background:#f5c54215; border-color:var(--gold); }
+
+@media(max-width:760px) {
+  .card { padding-inline:12px; }
+  .cardActions { gap:10px; }
+  .cardActions button,.dialogActions button { min-height:44px; }
+  .dialogActions { flex-wrap:wrap; gap:10px; }
+  .dialogActions > button { flex:1 1 120px; }
+  .fields input { font-size:16px; }
+}

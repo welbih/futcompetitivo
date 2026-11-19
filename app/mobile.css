@@ -1,0 +1,86 @@
+/* Mobile layout shared by the Arena and the public home page. */
+.sidebar { max-height:100dvh; overflow-y:auto; overscroll-behavior:contain; }
+.sidebar > * { flex-shrink:0; }
+
+@media(max-width:760px) {
+  .app-shell .sidebar,
+  .app-shell.sidebar-collapsed .sidebar {
+    position:sticky; inset:0 auto auto; display:grid;
+    grid-template-columns:minmax(0,1fr) auto 44px; align-items:center;
+    gap:10px; width:100%; max-height:85dvh;
+    padding:12px max(12px,env(safe-area-inset-right)) 12px max(12px,env(safe-area-inset-left));
+    border-right:0; border-bottom:1px solid var(--line);
+  }
+  .app-shell .sidebar-brand { grid-column:1; grid-row:1; justify-content:flex-start; min-width:0; font-size:28px; }
+  .app-shell .sidebar-brand > span { display:none; }
+  .app-shell .sidebar-toggle { grid-column:3; grid-row:1; margin:0; min-height:44px; width:44px; padding:8px; }
+  .app-shell .sidebar-toggle > span,.app-shell .sidebar-caption,.app-shell .sidebar-footer { display:none; }
+  .app-shell .sidebar nav { grid-column:1/-1; grid-row:2; margin:0; min-width:0; }
+  .app-shell .sidebar nav ul { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+  .app-shell .sidebar-link { flex-direction:column; justify-content:center; gap:6px; min-height:66px; padding:8px 4px; font-size:11px; text-align:center; }
+  .app-shell .sidebar-link > span { display:inline; overflow-wrap:anywhere; }
+  .app-shell.sidebar-collapsed .sidebar nav { display:none; }
+  .app-shell .arena-account { grid-column:2; grid-row:1; display:flex; align-items:center; gap:8px; margin:0; min-width:0; max-width:190px; }
+  .app-shell .arena-account-name { margin:0; max-width:84px; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .app-shell .arena-account-button { min-height:44px; width:auto; flex-direction:row; padding:8px 10px; gap:6px; font-size:12px; }
+  .app-shell .arena-account-button svg { width:18px; height:18px; }
+  .app-shell .arena-account-error { max-width:140px; font-size:10px; }
+  .app-shell .app-content,.app-shell.sidebar-collapsed .app-content { margin-left:0; width:100%; }
+  .app-shell .skip-link { left:12px; }
+  .resource-page { padding:28px 16px; }
+  .resource-heading { align-items:flex-start; gap:14px; margin-bottom:24px; }
+  .resource-heading > div { min-width:0; width:100%; }
+  .resource-heading h1 { font-size:38px; overflow-wrap:anywhere; }
+  .resource-heading button,.resource-heading > a { max-width:100%; min-height:44px; }
+  .resource-grid { grid-template-columns:minmax(0,1fr); gap:20px; }
+  .resource-card { min-width:0; padding:20px; }
+  .championship-card:has(.championship-card-menu) { padding-inline:44px; }
+  .championship-card-menu summary { width:38px; height:38px; }
+  .championship-filters { gap:12px; }
+  .championship-filters label { flex-basis:100%; }
+  .championship-filters select { min-height:44px; }
+  .creation-panel { padding:22px 16px; }
+  .form-grid { grid-template-columns:minmax(0,1fr); gap:18px; }
+  .form-grid > div,.form-panel-heading > div { min-width:0; }
+  .creation-heading,.detail-heading,.form-panel-heading { flex-wrap:wrap; gap:14px; }
+  .form-actions { flex-wrap:wrap; gap:12px; }
+  .form-actions .form-submit { width:100%; min-width:0; }
+  .participant-list { padding:10px; }
+  dialog[class] { width:calc(100% - 24px); max-width:540px; max-height:calc(100dvh - 24px); padding:40px 18px 20px; overscroll-behavior:contain; }
+  dialog[class] h2 { font-size:26px; overflow-wrap:anywhere; }
+  dialog[class] input,dialog[class] select,.creation-panel input:not([type=checkbox]),.creation-panel select,.championship-filters select { min-width:0; max-width:100%; font-size:16px; }
+  dialog[class] input[type=file] { font-size:12px; padding:10px 4px; }
+  dialog[class] button { min-height:44px; }
+  .organization-dialog-actions { flex-wrap:wrap; gap:10px; }
+  .organization-dialog-actions > button { flex:1 1 auto; min-width:0; }
+  .organization-dialog-actions .retry-button { white-space:nowrap; }
+  .organization-dialog-actions .form-submit { width:auto; padding-inline:18px; }
+  .score-fields { gap:10px; }
+  .score-fields > div { min-width:0; }
+  .schedule-view-options { display:flex; flex-wrap:wrap; gap:8px; }
+  .schedule-view-options button { min-height:44px; max-width:100%; white-space:normal; }
+  .advance-round-controls { grid-template-columns:minmax(0,1fr); }
+  .advance-round-controls > small { grid-column:1; }
+  .summary-screen-controls .summary-back-button,.summary-screen-controls .advance-round-button { grid-column:1; grid-row:auto; justify-self:stretch; min-height:44px; }
+  .round-heading { flex-wrap:wrap; gap:12px; padding:16px; }
+  .round-heading h3 { overflow-wrap:anywhere; }
+  .match-result-button { padding-top:42px; padding-right:14px; padding-left:14px; }
+  .match-status-badge,.match-results-view .match-status-badge { top:10px; right:12px; transform:none; max-width:none; }
+  .match-teams { min-width:0; gap:8px; }
+  .header { padding-inline:16px; gap:12px; }
+  .brand { gap:7px; font-size:8px; letter-spacing:1px; }
+  .brand strong { font-size:10px; }
+  .header-cta { padding:12px; }
+  .header-cta span { margin-left:8px; }
+  .hero { padding-top:32px; }
+  .hero-heading h1 { font-size:clamp(34px,9vw,58px); }
+  .hero-description { font-size:12px; }
+  .match-stage { grid-template-columns:minmax(0,1fr) 70px minmax(0,1fr); }
+  .game-side { padding-inline:0; }
+  .game-word { font-size:clamp(28px,8vw,46px); }
+  .controller { max-width:100%; width:70px; }
+  .trophy-star { right:0; }
+  .goal-wrap { max-width:calc(100% - 20px); }
+  .hero-bottom { flex-wrap:wrap; justify-content:center; text-align:center; line-height:1.8; }
+  footer { flex-wrap:wrap; gap:16px; padding:28px 16px; }
+}

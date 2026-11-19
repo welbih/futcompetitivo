@@ -56,3 +56,12 @@
 @keyframes team-flag-wind { 0%,100% { transform:translateY(calc(var(--wave-height) * -1)); } 50% { transform:translateY(var(--wave-height)); } }
 @keyframes team-flag-light { from { background-position:180% 0; } to { background-position:0 0; } }
 @media(prefers-reduced-motion:reduce) { .flagSlice,.flagFolds { animation:none; }.flagSlice { transform:none; } }
+
+@media(max-width:760px) {
+  .card { padding-inline:12px; }
+  .cardActions { gap:10px; }
+  .cardActions button,.dialogActions button { min-height:44px; }
+  .dialogActions { flex-wrap:wrap; gap:10px; }
+  .dialogActions > button { flex:1 1 120px; }
+  .fields input { font-size:16px; }
+}

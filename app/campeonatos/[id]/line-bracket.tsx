@@ -6,27 +6,13 @@ import Image from "next/image";
 import type { Participant } from "../novo/championship-form";
 import type { KnockoutTie, SchedulePhase } from "./championship-schedule";
 import { lineBracketLayout } from "./line-bracket-layout";
+import { lineBracketLegs, lineBracketScores } from "./line-bracket-scores";
 import { winner } from "./knockout-winner";
 import { validYoutubeUrl } from "../../components/youtube-url";
 import styles from "./line-bracket.module.css";
 
 type Match = SchedulePhase["rodadas"][number]["partidas"][number];
 type Props = { twoSided?: boolean; organization: { id: number; nome: string; trofeuUrl?: string | null }; phase: SchedulePhase; participants: Participant[]; editable: boolean; isAdmin: boolean; onSelect: (match: Match) => void; Logo: ComponentType<{ participant: Participant }> };
-
-function totals(tie: KnockoutTie, sides: (Participant | null)[]) {
-  const scores = [0, 0];
-  if (!tie.partidas.length || tie.partidas.some(match => !match.resultado)) return ["–", "–"];
-  for (const match of tie.partidas) {
-    const home = match.mandante.id === sides[0]?.id ? 0 : 1;
-    scores[home] += match.resultado!.golsMandante;
-    scores[1 - home] += match.resultado!.golsVisitante;
-  }
-  const last = tie.partidas.at(-1)!;
-  return scores.map((score, side) => {
-    const penalties = last.mandante.id === sides[side]?.id ? last.resultado?.penaltisMandante : last.resultado?.penaltisVisitante;
-    return penalties == null ? String(score) : `${score} (${penalties})`;
-  });
-}
 
 export default function LineBracket({ organization, phase, participants, editable, isAdmin, onSelect, Logo, twoSided = false }: Props) {
   const [failedTrophy, setFailedTrophy] = useState<string | null>(null);
@@ -95,10 +81,10 @@ export default function LineBracket({ organization, phase, participants, editabl
       {leaf.participant && <Logo participant={leaf.participant} />}<span><strong>{name(leaf.participant)}</strong></span>
     </div>)}
     {layout.games.map(game => {
-      const scores = totals(game.tie, game.sides);
+      const scores = lineBracketScores(game.tie, game.sides);
       const victorious = winner(game.tie);
       return <div key={game.tie.id} className={styles.junction} data-right={game.right} style={{ left: game.x - 42, top: game.y - 30 }}>
-        <div className={styles.scores}>{scores.map((score, side) => <b key={side} data-winner={!!game.sides[side] && victorious?.id === game.sides[side]?.id}>{score}</b>)}</div>
+        <div className={styles.scores}>{scores.map((score, side) => <b key={side} title={game.tie.tipo === "IDA_E_VOLTA" ? "Ida · Volta (pênaltis entre parênteses)" : undefined} data-winner={!!game.sides[side] && victorious?.id === game.sides[side]?.id}>{score}</b>)}</div>
         <details className={styles.gameMenu}><summary aria-label={`Opções do confronto ${game.tie.id}`} title={game.tie.etapa?.nome || "Confronto"}>⋯</summary><div><button type="button" className={styles.closeMenu} aria-label="Fechar opções do confronto" onClick={event => {
           const menu = event.currentTarget.closest("details");
           if (menu) { menu.open = false; menu.querySelector("summary")?.focus(); }
@@ -108,12 +94,14 @@ export default function LineBracket({ organization, phase, participants, editabl
     {[layout.final, layout.bronze].map((tie, index) => {
       if (!tie) return null;
       const sides = index === 0 ? layout.finalSides : [participants.find(p => p.id === tie.participanteUmId) || null, participants.find(p => p.id === tie.participanteDoisId) || null];
-      const scores = totals(tie, sides);
+      const legs = lineBracketLegs(tie, sides);
       return <section key={tie.id} className={styles.final} style={{ left: layout.finalX, width: layout.finalWidth, top: layout.centerY - 76 + index * 200 }} aria-label={index === 0 ? "Final" : "Disputa de terceiro lugar"}>
         <h3 className={index === 0 ? styles.finalTitle : undefined}>{index === 0 ? "Final" : "Disputa de 3º lugar"}</h3>
         <div className={styles.finalMatch}>
           <div className={styles.finalTeams} style={{ gap: layout.scoreWidth * 2 + 24 }}>{sides.map((participant, side) => <div key={side} data-eliminated={!!participant && !!winner(tie) && winner(tie)?.id !== participant.id}>{participant && <Logo participant={participant} />}<strong>{name(participant)}</strong></div>)}</div>
-          <div className={styles.finalScore} aria-label={`Placar: ${scores[0]} a ${scores[1]}`}><b data-winner={!!sides[0] && winner(tie)?.id === sides[0].id}>{scores[0]}</b><span>×</span><b data-winner={!!sides[1] && winner(tie)?.id === sides[1].id}>{scores[1]}</b></div>
+          <div className={styles.finalScore}>{legs.map(leg => <div key={leg.label} className={styles.legScore} aria-label={`${leg.label}: ${leg.scores[0]} a ${leg.scores[1]}`}>
+            {legs.length > 1 && <small>{leg.label}</small>}<div><b data-winner={!!sides[0] && winner(tie)?.id === sides[0].id}>{leg.scores[0]}</b><span>×</span><b data-winner={!!sides[1] && winner(tie)?.id === sides[1].id}>{leg.scores[1]}</b></div>
+          </div>)}</div>
         </div>
         <div className={styles.finalActions}>{controls(tie)}</div>
       </section>;

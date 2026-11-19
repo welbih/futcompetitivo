@@ -84,3 +84,13 @@
 .place > b { border-radius:50%; }
 .hero h1 { font-weight:400; background:linear-gradient(180deg,#fff,var(--gold-light),var(--gold)); background-clip:text; color:transparent; }
 .hero h1 span { color:inherit; }
+@media(max-width:760px) {
+  .page { padding-inline:16px; }
+  .hero > p:last-of-type { white-space:normal; overflow:visible; font-size:13px; }
+  .kicker { line-height:1.8; }
+  .highlight { padding:22px 18px; }
+  .highlight > strong { font-size:30px; }
+  .rankIdentity strong { font-size:19px; }
+  .rankIdentity > span { line-height:1.6; }
+  .tabs button { min-height:44px; padding:10px 14px; }
+}

@@ -29,7 +29,7 @@ export default function Sidebar({ collapsed, onToggle }: { collapsed: boolean; o
     <p className="sidebar-caption">SUA ARENA</p>
     <nav id="sidebar-navigation" aria-label="Menu lateral"><ul>{items.map((item) => {
       const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-      return <li key={item.href}><Link href={item.href} className={`sidebar-link${active ? " is-active" : ""}`} aria-current={active ? "page" : undefined} aria-label={item.label} title={collapsed ? item.label : undefined}><MenuIcon type={item.icon} /><span>{item.label}</span></Link></li>;
+      return <li key={item.href}><Link href={item.href} className={`sidebar-link${active ? " is-active" : ""}`} aria-current={active ? "page" : undefined} aria-label={item.label} onClick={() => { if (!collapsed && window.matchMedia("(max-width: 760px)").matches) onToggle(); }} title={collapsed ? item.label : undefined}><MenuIcon type={item.icon} /><span>{item.label}</span></Link></li>;
     })}</ul></nav>
     <ArenaLogin />
     <span className="sidebar-footer"><i /> FUTEBOL VIRTUAL.<br />RIVALIDADE REAL.</span>

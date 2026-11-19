@@ -15,10 +15,14 @@ export function lineBracketLayout(phase: SchedulePhase, participants: Participan
   const byId = new Map(ties.map(tie => [tie.id, tie]));
   const split = participants.length > 8 || twoSided;
   const scoreWidth = Math.max(64, ...ties.map(tie => {
-    const goals = tie.partidas.reduce((sum, match) => sum + (match.resultado?.golsMandante || 0) + (match.resultado?.golsVisitante || 0), 0);
-    const penalties = tie.partidas.at(-1)?.resultado;
-    const penaltyDigits = Math.max(String(penalties?.penaltisMandante ?? "").length, String(penalties?.penaltisVisitante ?? "").length);
-    return (String(goals).length + (penaltyDigits ? penaltyDigits + 3 : 0)) * 9 + 12;
+    const count = Math.max(tie.partidas.length, tie.tipo === "IDA_E_VOLTA" ? 2 : 1);
+    const characters = Array.from({ length: count }, (_, index) => {
+      const result = tie.partidas[index]?.resultado;
+      const goals = Math.max(String(result?.golsMandante ?? "–").length, String(result?.golsVisitante ?? "–").length);
+      const penaltyDigits = Math.max(String(result?.penaltisMandante ?? "").length, String(result?.penaltisVisitante ?? "").length);
+      return goals + (penaltyDigits ? penaltyDigits + 3 : 0);
+    }).reduce((sum, length) => sum + length, 0) + (count - 1) * 3;
+    return characters * 9 + 12;
   }));
   const spacing = Math.max(120, scoreWidth + 48);
   const rowSpacing = split ? ties.some(tie => tie.tipo === "IDA_E_VOLTA" || tie.partidas.some(match => match.resultado?.penaltisMandante != null)) ? 96 : 84 : 58;

@@ -58,4 +58,14 @@
 .scorer { border-color:#19c37d50; background:linear-gradient(110deg,#19c37d08,#19c37d18,#19c37d08); color:var(--cyan); }
 .scorer strong { margin-bottom:6px; }
 .scorer div > span { font-size:14px; color:var(--text); }
+@media(max-width:760px) {
+  .toolbar { padding:10px; gap:10px; }
+  .capture { min-height:44px; }
+  .layoutOptions { flex-wrap:wrap; }
+  .layoutOptions button { min-height:44px; }
+  .zoomControls { margin-left:0; }
+  .zoomControls button { width:44px; height:44px; }
+  .champion { padding:16px; gap:10px; }
+  .champion strong { font-size:18px; overflow-wrap:anywhere; }
+}
 @media(max-width:600px) { .heading { align-items:flex-start; }.badge { display:none; }.hint { font-size:12px; } }
