@@ -9,6 +9,8 @@ import PlayerJersey from "../components/player-jersey";
 type Player = { id: number; nome: string; apelido: string | null; ativo: boolean };
 type Action = { kind: "create" } | { kind: "edit" | "deactivate"; player: Player };
 
+const searchText = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
+
 async function readResponse(response: Response) {
   if (response.status === 204) return null;
   const result = await response.json();
@@ -69,6 +71,7 @@ export default function PlayersManager() {
   const isAdmin = useAdminPermission();
   const authenticated = useAuthenticatedPermission();
   const [players, setPlayers] = useState<Player[]>([]);
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -98,13 +101,15 @@ export default function PlayersManager() {
     return () => controller.abort();
   }, [reload]);
 
-  const visible = players.filter(item => isAdmin || item.ativo).sort((a, b) => (a.apelido?.trim() || a.nome).localeCompare(b.apelido?.trim() || b.nome, "pt-BR", { sensitivity: "base" }) || a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }) || a.id - b.id);
+  const query = searchText(search);
+  const visible = players.filter(item => (isAdmin || item.ativo) && (!query || searchText(item.nome).includes(query) || searchText(item.apelido || "").includes(query))).sort((a, b) => (a.apelido?.trim() || a.nome).localeCompare(b.apelido?.trim() || b.nome, "pt-BR", { sensitivity: "base" }) || a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }) || a.id - b.id);
 
   return <main className="resource-page"><p className="eyebrow">FUTEBOL COMPETITIVO / SUA ARENA</p><div className="resource-heading"><div><h1>Jogadores</h1><p>Cadastre e gerencie os jogadores que fazem parte da sua arena.</p></div>{authenticated && <button type="button" className={styles.primary} onClick={() => { setNotice(""); setAction({ kind: "create" }); }}>+ Novo jogador</button>}</div>
+    <div className={styles.search}><label htmlFor="player-search">Buscar jogador</label><input id="player-search" type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Nome ou apelido" autoComplete="off" /></div>
     {notice && <p role="status" className={styles.notice}>{notice}</p>}
     {loading && <p role="status" className="form-note">Carregando jogadores…</p>}
     {error && <div role="alert" className={styles.error}><p>{error}</p><button type="button" className={styles.secondary} onClick={() => { setLoading(true); setError(""); setReload((value) => value + 1); }}>Atualizar listagem</button></div>}
-    {!loading && !error && !visible.length && <p className="resource-empty">Nenhum jogador disponível.{authenticated && " Clique em Novo jogador para começar."}</p>}
+    {!loading && !error && !visible.length && <p className="resource-empty">{query ? "Nenhum jogador encontrado para esta busca." : <>Nenhum jogador disponível.{authenticated && " Clique em Novo jogador para começar."}</>}</p>}
     <div className="resource-grid">{visible.map((player, index) => <article key={player.id} className={styles.card}><Link href={`/jogadores/${player.id}`} className={styles.statisticsShirt} aria-label={`Ver estatísticas de ${player.apelido || player.nome}`}><PlayerJersey player={player} away={index % 2 === 1} /></Link><p className={styles.playerFullName}>{player.nome}</p><Link href={`/jogadores/${player.id}`} className={styles.statisticsLink}>Ver estatísticas <span aria-hidden="true">↗</span></Link>{isAdmin && <span className={player.ativo ? styles.active : styles.inactive}>{player.ativo ? "Ativo" : "Inativo"}</span>}{authenticated && <div className={styles.cardActions}>{player.ativo ? <><button type="button" className={styles.secondary} disabled={activatingId !== null} aria-label={`Editar ${player.apelido || player.nome}`} onClick={() => { setNotice(""); setAction({ kind: "edit", player }); }}>Editar</button>{isAdmin && <button type="button" className={styles.deactivate} disabled={activatingId !== null} aria-label={`Inativar ${player.apelido || player.nome}`} onClick={() => { setNotice(""); setAction({ kind: "deactivate", player }); }}>Inativar</button>}</> : isAdmin && <button type="button" className={styles.primary} disabled={activatingId !== null} aria-label={`Ativar ${player.apelido || player.nome}`} onClick={() => activatePlayer(player)}>{activatingId === player.id ? "Ativando…" : "Ativar"}</button>}</div>}</article>)}</div>
     {action && (action.kind !== "deactivate" || isAdmin) && (action.kind === "deactivate" || authenticated) && <PlayerDialog key={action.kind === "create" ? "create" : `${action.kind}-${action.player.id}`} action={action} onClose={() => setAction(null)} onSaved={(player) => {
       setPlayers((previous) => [...previous.filter((item) => item.id !== player.id), player].sort((a, b) => a.id - b.id));
