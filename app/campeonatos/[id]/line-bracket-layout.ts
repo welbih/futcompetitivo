@@ -14,10 +14,18 @@ export function lineBracketLayout(phase: SchedulePhase, participants: Participan
   const bronze = ties.find(tie => tie.terceiroLugar || tie.etapa?.codigo === "TERCEIRO_LUGAR");
   const byId = new Map(ties.map(tie => [tie.id, tie]));
   const split = participants.length > 8;
-  const spacing = 120;
+  const scoreWidth = Math.max(64, ...ties.map(tie => {
+    const goals = tie.partidas.reduce((sum, match) => sum + (match.resultado?.golsMandante || 0) + (match.resultado?.golsVisitante || 0), 0);
+    const penalties = tie.partidas.at(-1)?.resultado;
+    const penaltyDigits = Math.max(String(penalties?.penaltisMandante ?? "").length, String(penalties?.penaltisVisitante ?? "").length);
+    return (String(goals).length + (penaltyDigits ? penaltyDigits + 3 : 0)) * 9 + 12;
+  }));
+  const spacing = Math.max(120, scoreWidth + 48);
+  const rowSpacing = split ? ties.some(tie => tie.tipo === "IDA_E_VOLTA" || tie.partidas.some(match => match.resultado?.penaltisMandante != null)) ? 96 : 84 : 58;
+  const finalWidth = Math.max(320, scoreWidth * 2 + 180);
   const armWidth = 280 + Math.max(1, phase.rodadas.length - 1) * spacing;
-  const finalX = armWidth + 48;
-  const width = split ? finalX * 2 + 320 : finalX + 344;
+  const finalX = armWidth + scoreWidth + 56;
+  const width = split ? finalX * 2 + finalWidth : finalX + finalWidth + 24;
   const leaves: LineLeaf[] = [];
   const games: LineGame[] = [];
   const counts = [0, 0];
@@ -36,8 +44,8 @@ export function lineBracketLayout(phase: SchedulePhase, participants: Participan
       games.push({ ...point, tie: source, right, inputs: [one.point, two.point], sides: [one.side, two.side] });
       return { point, side: participant(id) || winner(source) };
     }
-    const y = 88 + (withTrophy ? 180 : 0) + counts[right ? 1 : 0]++ * 76;
-    const x = right ? width - 280 : 280;
+    const y = 88 + (withTrophy ? 180 : 0) + counts[right ? 1 : 0]++ * rowSpacing;
+    const x = right ? width - 256 : 256;
     leaves.push({ x: right ? width - 256 : 24, y, participant: participant(id), right, key });
     return { point: { x, y }, side: participant(id) };
   }
@@ -51,5 +59,5 @@ export function lineBracketLayout(phase: SchedulePhase, participants: Participan
   }
   const centerY = finalInputs.length ? (finalInputs[0].y + finalInputs[1].y) / 2 : 150;
   const height = Math.max(360, ...leaves.map(leaf => leaf.y + 76), centerY + (bronze ? 340 : 150));
-  return { width, height, split, leaves, games, final, bronze, finalX, centerY, finalSides, finalInputs };
+  return { width, height, split, leaves, games, final, bronze, finalX, finalWidth, scoreWidth, centerY, finalSides, finalInputs };
 }

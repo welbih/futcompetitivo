@@ -11,19 +11,24 @@
 }
 @media(prefers-reduced-motion:reduce) { .finalTrophy img { animation:none; filter:brightness(0) saturate(100%) invert(82%) sepia(66%) saturate(654%) hue-rotate(353deg) drop-shadow(0 0 18px #f5c54288); } }
 .wires path { fill:none; stroke:#a9b8d066; stroke-width:2; }
-.wires path[data-winner=true] { stroke:var(--gold); }
+.wires path[data-state=ready] { stroke:var(--gold-light); }
+.wires path[data-state=winner] { stroke:var(--gold); }
+.wires path[data-state=eliminated] { stroke:#000; }
+.wires path.finalConnector { stroke:#a9b8d0; stroke-linecap:square; }
+.wires path.finalConnector[data-state=winner] { stroke:var(--gold); }
+.wires path.finalConnector[data-state=eliminated] { stroke:#000; }
 .leaf { position:absolute; display:flex; align-items:center; gap:12px; width:232px; height:50px; padding:8px 12px; border:1px solid var(--line); background:var(--surface-card,var(--panel)); border-radius:6px; }
 .leaf > span:last-child { display:grid; gap:4px; min-width:0; }
 .leaf strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
 .leaf[data-eliminated=true] strong,.finalTeams > div[data-eliminated=true] strong { opacity:.45; }
 .leaf[data-right=true] { flex-direction:row-reverse; text-align:right; }
 .junction { position:absolute; width:84px; height:60px; }
-.scores { display:grid; gap:10px; width:40px; text-align:center; background:var(--panel); border-radius:4px; }
-.junction[data-right=true] .scores { margin-left:44px; }
-.scores b { font-size:13px; line-height:20px; font-variant-numeric:tabular-nums; color:var(--muted); }
+.scores { position:absolute; top:0; left:54px; display:grid; gap:12px; min-width:24px; width:max-content; text-align:left; }
+.junction[data-right=true] .scores { left:auto; right:54px; text-align:right; }
+.scores b { display:block; font-size:15px; line-height:24px; font-variant-numeric:tabular-nums; color:var(--muted); white-space:nowrap; text-shadow:0 1px 3px var(--panel); }
 .scores b[data-winner=true],.finalTeams b[data-winner=true] { color:var(--gold); }
-.gameMenu { position:absolute; top:19px; left:44px; z-index:2; }
-.junction[data-right=true] .gameMenu { left:8px; }
+.gameMenu { position:absolute; top:18px; left:6px; z-index:2; }
+.junction[data-right=true] .gameMenu { top:18px; left:52px; }
 .gameMenu[open] { z-index:4; }
 .gameMenu summary { display:grid; place-items:center; width:26px; height:24px; background:var(--panel); border:1px solid var(--line); border-radius:4px; color:var(--gold); cursor:pointer; list-style:none; }
 .gameMenu summary::-webkit-details-marker { display:none; }

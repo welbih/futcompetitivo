@@ -32,7 +32,24 @@ export default function LineBracket({ organization, phase, participants, editabl
   const [failedTrophy, setFailedTrophy] = useState<string | null>(null);
   const trophySource = organization.trofeuUrl ? `/api/organizacoes/${organization.id}/trofeu` : null;
   const layout = lineBracketLayout(phase, participants, !!trophySource);
+  const eliminated = new Set<number>();
+  for (const tie of knockoutTies(phase)) {
+    if (tie.terceiroLugar || tie.etapa?.codigo === "TERCEIRO_LUGAR") continue;
+    const victorious = winner(tie);
+    if (!victorious) continue;
+    const match = tie.partidas[0];
+    for (const participant of [match.mandante, match.visitante]) {
+      if (participant.id !== victorious.id) eliminated.add(participant.id);
+    }
+  }
   const name = (participant: Participant | null) => participant ? participant.jogador.apelido || participant.jogador.nome : "A definir";
+  function lineState(tie: KnockoutTie | undefined, participant: Participant | null | undefined) {
+    if (!participant) return "pending";
+    if (eliminated.has(participant.id)) return "eliminated";
+    const victorious = winner(tie);
+    if (victorious) return victorious.id === participant.id ? "winner" : "eliminated";
+    return "ready";
+  }
   function controls(tie: KnockoutTie) {
     return tie.partidas.map((match, index) => {
       const round = phase.rodadas.find(round => round.partidas.some(item => item.id === match.id));
@@ -46,22 +63,35 @@ export default function LineBracket({ organization, phase, participants, editabl
     });
   }
   return <>
-    {trophySource && failedTrophy !== trophySource && layout.final && <div className={styles.finalTrophy} style={{ left: layout.finalX + 80, top: layout.centerY - 260 }}>
+    {trophySource && failedTrophy !== trophySource && layout.final && <div className={styles.finalTrophy} style={{ left: layout.finalX + (layout.finalWidth - 160) / 2, top: layout.centerY - 260 }}>
       <Image src={trophySource} alt={`Troféu de ${organization.nome}`} width={132} height={140} unoptimized onError={() => setFailedTrophy(trophySource)} />
     </div>}
     <svg className={styles.wires} width={layout.width} height={layout.height} aria-hidden="true">
-      {layout.games.flatMap(game => game.inputs.map((input, side) => <path key={`${game.tie.id}-${side}`} data-winner={!!game.sides[side] && winner(game.tie)?.id === game.sides[side]?.id} d={`M ${input.x} ${input.y} H ${game.x} V ${game.y}`} />))}
+      {layout.games.flatMap(game => game.inputs.map((input, side) => {
+        const origin = side === 0 ? game.tie.origemUmId : game.tie.origemDoisId;
+        const previous = layout.games.find(source => source.tie.id === origin);
+        const state = lineState(game.tie, game.sides[side]);
+        return <g key={`${game.tie.id}-${side}`}>
+          <path data-state={state === "eliminated" ? "eliminated" : previous && winner(previous.tie) ? "winner" : state} d={`M ${input.x} ${input.y} H ${game.x}`} />
+          <path data-state={game.sides[side] && winner(game.tie)?.id === game.sides[side]?.id ? state : "pending"} d={`M ${game.x} ${input.y} V ${game.y}`} />
+        </g>;
+      }))}
       {layout.finalInputs.map((input, side) => {
-        const endX = layout.split && side === 1 ? layout.finalX + 320 : layout.finalX;
-        const elbow = layout.split && side === 1 ? endX + 32 : endX - 32;
-        return <path key={`final-${side}`} d={`M ${input.x} ${input.y} H ${elbow} V ${layout.centerY} H ${endX}`} />;
+        const right = layout.split && side === 1;
+        const edgeX = right ? layout.finalX + layout.finalWidth : layout.finalX;
+        const endX = edgeX + (right ? -1 : 1);
+        const elbow = right ? edgeX + 32 : edgeX - 32;
+        const origin = side === 0 ? layout.final?.origemUmId : layout.final?.origemDoisId;
+        const previous = layout.games.find(source => source.tie.id === origin);
+        const state = lineState(layout.final, layout.finalSides[side]);
+        return <g key={`final-${side}`}>
+          <path data-state={state === "eliminated" ? "eliminated" : previous && winner(previous.tie) ? "winner" : state} d={`M ${input.x} ${input.y} H ${elbow}`} />
+          <path data-state={state === "ready" ? "pending" : state} d={`M ${elbow} ${input.y} V ${layout.centerY}`} />
+          <path className={styles.finalConnector} data-state={state === "ready" ? "pending" : state} d={`M ${elbow} ${layout.centerY} H ${endX}`} />
+        </g>;
       })}
     </svg>
-    {layout.leaves.map(leaf => <div key={leaf.key} className={styles.leaf} data-right={leaf.right} data-eliminated={!!leaf.participant && knockoutTies(phase).some(tie => {
-      if (tie.terceiroLugar || tie.etapa?.codigo === "TERCEIRO_LUGAR") return false;
-      const victorious = winner(tie);
-      return !!victorious && victorious.id !== leaf.participant!.id && tie.partidas.some(match => match.mandante.id === leaf.participant!.id || match.visitante.id === leaf.participant!.id);
-    })} style={{ left: leaf.x, top: leaf.y - 25 }}>
+    {layout.leaves.map(leaf => <div key={leaf.key} className={styles.leaf} data-right={leaf.right} data-eliminated={!!leaf.participant && eliminated.has(leaf.participant.id)} style={{ left: leaf.x, top: leaf.y - 25 }}>
       {leaf.participant && <Logo participant={leaf.participant} />}<span><strong>{name(leaf.participant)}</strong></span>
     </div>)}
     {layout.games.map(game => {
@@ -79,10 +109,10 @@ export default function LineBracket({ organization, phase, participants, editabl
       if (!tie) return null;
       const sides = index === 0 ? layout.finalSides : [participants.find(p => p.id === tie.participanteUmId) || null, participants.find(p => p.id === tie.participanteDoisId) || null];
       const scores = totals(tie, sides);
-      return <section key={tie.id} className={styles.final} style={{ left: layout.finalX, top: layout.centerY - 76 + index * 200 }} aria-label={index === 0 ? "Final" : "Disputa de terceiro lugar"}>
+      return <section key={tie.id} className={styles.final} style={{ left: layout.finalX, width: layout.finalWidth, top: layout.centerY - 76 + index * 200 }} aria-label={index === 0 ? "Final" : "Disputa de terceiro lugar"}>
         <h3 className={index === 0 ? styles.finalTitle : undefined}>{index === 0 ? "Final" : "Disputa de 3º lugar"}</h3>
         <div className={styles.finalMatch}>
-          <div className={styles.finalTeams}>{sides.map((participant, side) => <div key={side} data-eliminated={!!participant && !!winner(tie) && winner(tie)?.id !== participant.id}>{participant && <Logo participant={participant} />}<strong>{name(participant)}</strong></div>)}</div>
+          <div className={styles.finalTeams} style={{ gap: layout.scoreWidth * 2 + 24 }}>{sides.map((participant, side) => <div key={side} data-eliminated={!!participant && !!winner(tie) && winner(tie)?.id !== participant.id}>{participant && <Logo participant={participant} />}<strong>{name(participant)}</strong></div>)}</div>
           <div className={styles.finalScore} aria-label={`Placar: ${scores[0]} a ${scores[1]}`}><b data-winner={!!sides[0] && winner(tie)?.id === sides[0].id}>{scores[0]}</b><span>×</span><b data-winner={!!sides[1] && winner(tie)?.id === sides[1].id}>{scores[1]}</b></div>
         </div>
         <div className={styles.finalActions}>{controls(tie)}</div>
