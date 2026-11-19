@@ -61,7 +61,7 @@ export default function HallOfFamePage() {
           <div className={styles.tabs} role="group" aria-label="Organização do ranking"><button aria-pressed={!organization} onClick={() => setOrganization("")}>Ranking geral</button>{organizations.map(org => <button key={org.id} aria-pressed={organization === String(org.id)} onClick={() => setOrganization(String(org.id))}>{org.nome}</button>)}</div>
           <ol className={styles.ranking} aria-label="Ranking de campeões">{rows.map(row => <li key={row.player.id} className={styles.rankCard} data-position={row.position}>
             <span className={styles.position} aria-label={`${row.position}º lugar`}>{row.position}</span>
-            <div className={styles.rankIdentity}><strong>{hallPlayerName(row.player)}</strong><span>{row.finals} colocações no top 2</span></div>
+            <div className={styles.rankIdentity}><strong>{hallPlayerName(row.player)}</strong><span>{row.finals} {row.finals === 1 ? "final disputada" : "finais disputadas"}</span></div>
             <div className={styles.rankStats}><div><b>{row.titles}</b><small>Títulos</small></div><div><b>{row.runnersUp}</b><small>Vices</small></div></div>
           </li>)}</ol>
           <p className={styles.note}>Ordenado por títulos e depois por vices. Jogadores com a mesma quantidade de títulos e vices dividem a posição. Top 2 soma títulos e vice-campeonatos, incluindo ligas. Apenas campeonatos finalizados com campeão identificado são contabilizados.</p>
