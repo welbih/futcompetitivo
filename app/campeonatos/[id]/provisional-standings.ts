@@ -43,7 +43,7 @@ export function topScorers(rounds: SchedulePhase["rodadas"], participants: Parti
   });
 }
 
-export type OfficialClassification = {
+export type OfficialClassification = { parcial?: boolean;
   rodada: number;
   tabela: { participante: Participant; pontos: number; jogos: number; vitorias: number; empates: number; derrotas: number; golsPro: number; golsContra: number; saldoGols: number; posicaoAtual: number; posicaoAnterior: number; variacao: number; movimentacao: string }[];
 };

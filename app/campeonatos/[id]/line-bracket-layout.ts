@@ -7,7 +7,7 @@ export type LinePoint = { x: number; y: number };
 export type LineLeaf = LinePoint & { participant: Participant | null; right: boolean; key: string };
 export type LineGame = LinePoint & { tie: KnockoutTie; right: boolean; inputs: LinePoint[]; sides: (Participant | null)[] };
 
-export function lineBracketLayout(phase: SchedulePhase, participants: Participant[], withTrophy = false, twoSided = false) {
+export function lineBracketLayout(phase: SchedulePhase, participants: Participant[], withTrophy = false, twoSided = false, withdrawn: number[] = []) {
   const ties = knockoutTies(phase);
   const main = ties.filter(tie => !tie.terceiroLugar && tie.etapa?.codigo !== "TERCEIRO_LUGAR");
   const final = main.find(tie => tie.etapa?.codigo === "FINAL") || main.at(-1);
@@ -46,7 +46,7 @@ export function lineBracketLayout(phase: SchedulePhase, participants: Participan
       const x = right ? Math.min(one.point.x, two.point.x) - spacing : Math.max(one.point.x, two.point.x) + spacing;
       const point = { x, y: (one.point.y + two.point.y) / 2 };
       games.push({ ...point, tie: source, right, inputs: [one.point, two.point], sides: [one.side, two.side] });
-      return { point, side: participant(id) || winner(source) };
+      return { point, side: participant(id) || winner(source, withdrawn) };
     }
     const y = 88 + (withTrophy ? 180 : 0) + counts[right ? 1 : 0]++ * rowSpacing;
     const x = right ? width - 256 : 256;

@@ -1,8 +1,12 @@
 import type { KnockoutTie } from "./championship-schedule";
 
-export function winner(tie?: KnockoutTie) {
+export function winner(tie?: KnockoutTie, withdrawn: number[] = []) {
   if (!tie || tie.partidas.length !== Math.max(tie.partidas.length, tie.tipo === "IDA_E_VOLTA" ? 2 : 1)) return null;
   const first = tie.partidas[0];
+  const homeWithdrawn = withdrawn.includes(first.mandante.id);
+  const awayWithdrawn = withdrawn.includes(first.visitante.id);
+  if (homeWithdrawn !== awayWithdrawn) return homeWithdrawn ? first.visitante : first.mandante;
+  if (homeWithdrawn && awayWithdrawn) return null;
   let goalDifference = 0;
   for (const match of tie.partidas) {
     if (match.status !== "FINALIZADA" || !match.resultado) return null;

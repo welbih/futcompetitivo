@@ -11,6 +11,31 @@ npm run dev
 
 Abra http://localhost:3000.
 
+## Atualizações ao vivo dos campeonatos
+
+A página individual mantém uma conexão `EventSource` com
+`/api/campeonatos/{id}/eventos`. O proxy encaminha o SSE público usando
+`FUTCOMPETITIVO_API_URL`, sem expor credenciais nem aplicar o timeout de 15 segundos
+das consultas JSON. Não há nova variável obrigatória.
+
+Os eventos `conectado` e `campeonato-atualizado` provocam uma consulta completa do
+campeonato, incluindo classificação atual, resultados e chaveamento. Ao reconectar,
+os dados são sincronizados novamente: o backend não oferece replay de eventos.
+A exclusão encerra a conexão e mostra a opção de voltar à listagem. A conexão
+também é encerrada ao sair da página.
+
+O backend atual exige **uma única réplica**, pois distribui os eventos em memória.
+Proxies/CDNs devem permitir streaming sem cache ou buffering. Limites de duração
+das funções de hospedagem podem encerrar o stream; a tela tenta reconectar e
+sincroniza os dados novamente. Confirme a entrega imediata dos eventos e heartbeats
+na implantação.
+
+Testes da integração e dos fluxos administrativos:
+
+```sh
+node --test tests/championship-live.test.mjs tests/championship-management.test.mjs
+```
+
 ## Verificação e produção
 
 ```sh

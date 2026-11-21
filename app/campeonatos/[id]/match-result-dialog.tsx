@@ -9,7 +9,7 @@ import { validYoutubeUrl } from "../../components/youtube-url";
 
 type Match = SchedulePhase["rodadas"][number]["partidas"][number];
 
-export default function MatchResultDialog({ championshipId, match, knockout = false, saveWithoutFinalizingRound, onClose, onSaved }: { championshipId: number; knockout?: boolean; saveWithoutFinalizingRound?: { roundId: number }; match: Match; onClose: () => void; onSaved: (championship: Championship) => void }) {
+export default function MatchResultDialog({ championshipId, match, knockout = false, aggregateDifference = 0, saveWithoutFinalizingRound, onClose, onSaved }: { championshipId: number; knockout?: boolean; aggregateDifference?: number; saveWithoutFinalizingRound?: { roundId: number }; match: Match; onClose: () => void; onSaved: (championship: Championship) => void }) {
   const isAdmin = useAdminPermission();
   const [youtubeUrl, setYoutubeUrl] = useState(match.youtubeUrl || "");
   const dialog = useRef<HTMLDialogElement>(null);
@@ -21,15 +21,15 @@ export default function MatchResultDialog({ championshipId, match, knockout = fa
   const [homePenalties, setHomePenalties] = useState(match.resultado?.penaltisMandante != null ? String(match.resultado.penaltisMandante) : "");
   const [awayPenalties, setAwayPenalties] = useState(match.resultado?.penaltisVisitante != null ? String(match.resultado.penaltisVisitante) : "");
   const validNumber = (value: string) => value !== "" && /^\d+$/.test(value) && Number(value) <= 2147483647;
-  const tied = knockout && homeScore !== "" && awayScore !== "" && Number(homeScore) === Number(awayScore);
-  const valid = [homeScore, awayScore].every(validNumber) && (!tied || ([homePenalties, awayPenalties].every(validNumber) && Number(homePenalties) !== Number(awayPenalties)));
+  const tied = knockout && homeScore !== "" && awayScore !== "" && Number(homeScore) - Number(awayScore) + aggregateDifference === 0;
+  const valid = !match.wo && [homeScore, awayScore].every(validNumber) && (!tied || ([homePenalties, awayPenalties].every(validNumber) && Number(homePenalties) !== Number(awayPenalties)));
 
   useEffect(() => { dialog.current?.showModal(); }, []);
 
   return <dialog ref={dialog} className="create-dialog match-result-dialog" aria-labelledby="result-title" onClose={onClose} onCancel={(event) => { if (submitting.current) event.preventDefault(); }}>
     <button type="button" className="close-dialog" aria-label="Fechar placar" disabled={pending} onClick={() => dialog.current?.close()}>×</button>
-    <p className="eyebrow">PARTIDA #{match.id} / RESULTADO</p><h2 id="result-title">{match.resultado ? "Editar placar" : "Adicionar placar"}</h2><p>Informe o resultado final da partida. {knockout ? "Em caso de empate, informe os pênaltis com um vencedor." : "Zero a zero também é um placar válido."}</p>
-    <form onSubmit={async (event) => {
+    <p className="eyebrow">PARTIDA #{match.id} / RESULTADO</p><h2 id="result-title">{match.resultado ? "Editar placar" : "Adicionar placar"}</h2><p>Informe o resultado final da partida. {knockout ? "Em caso de empate no confronto (incluindo o jogo de ida, quando houver), informe os pênaltis com um vencedor." : "Zero a zero também é um placar válido."}</p>
+    {match.wo && <p role="status" className="form-note">Resultado automático por W.O. A edição do placar não é permitida.</p>}<form onSubmit={async (event) => {
       event.preventDefault();
       if (!valid || submitting.current) return;
       if (isAdmin && !validYoutubeUrl(youtubeUrl.trim())) { setError("Informe um endereço válido do YouTube."); return; }

@@ -10,7 +10,9 @@
   83.333333% { filter:brightness(0) saturate(100%) invert(60%) sepia(100%) saturate(3000%) hue-rotate(360deg) drop-shadow(0 0 18px #ff8c00); }
 }
 @media(prefers-reduced-motion:reduce) { .finalTrophy img { animation:none; filter:brightness(0) saturate(100%) invert(82%) sepia(66%) saturate(654%) hue-rotate(353deg) drop-shadow(0 0 18px #f5c54288); } }
-.wires path { fill:none; stroke:#a9b8d066; stroke-width:2; }
+.wires path { fill:none; stroke:#a9b8d066; stroke-width:2; transition:stroke .7s ease; }
+.leaf strong,.finalTeams > div { transition:opacity .7s ease, color .7s ease; }
+@media(prefers-reduced-motion:reduce) { .wires path,.leaf strong,.finalTeams > div { transition:none; } }
 .wires path[data-state=ready] { stroke:var(--gold-light); }
 .wires path[data-state=winner] { stroke:var(--gold); }
 .wires path[data-state=eliminated] { stroke:#000; }

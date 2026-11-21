@@ -7,17 +7,18 @@ import type { Participant } from "../novo/championship-form";
 import type { KnockoutTie, SchedulePhase } from "./championship-schedule";
 import { lineBracketLayout } from "./line-bracket-layout";
 import { lineBracketLegs, lineBracketScores } from "./line-bracket-scores";
-import { winner } from "./knockout-winner";
+import { winner as tieWinner } from "./knockout-winner";
 import { validYoutubeUrl } from "../../components/youtube-url";
 import styles from "./line-bracket.module.css";
 
 type Match = SchedulePhase["rodadas"][number]["partidas"][number];
-type Props = { twoSided?: boolean; organization: { id: number; nome: string; trofeuUrl?: string | null }; phase: SchedulePhase; participants: Participant[]; editable: boolean; isAdmin: boolean; onSelect: (match: Match) => void; Logo: ComponentType<{ participant: Participant }> };
+type Props = { withdrawn?: number[]; twoSided?: boolean; organization: { id: number; nome: string; trofeuUrl?: string | null }; phase: SchedulePhase; participants: Participant[]; editable: boolean; isAdmin: boolean; onSelect: (match: Match) => void; Logo: ComponentType<{ participant: Participant }> };
 
-export default function LineBracket({ organization, phase, participants, editable, isAdmin, onSelect, Logo, twoSided = false }: Props) {
+export default function LineBracket({ organization, phase, participants, editable, isAdmin, onSelect, Logo, twoSided = false, withdrawn = [] }: Props) {
+  const winner = (tie?: KnockoutTie) => tieWinner(tie, withdrawn);
   const [failedTrophy, setFailedTrophy] = useState<string | null>(null);
   const trophySource = organization.trofeuUrl ? `/api/organizacoes/${organization.id}/trofeu` : null;
-  const layout = lineBracketLayout(phase, participants, !!trophySource, twoSided);
+  const layout = lineBracketLayout(phase, participants, !!trophySource, twoSided, withdrawn);
   const eliminated = new Set<number>();
   for (const tie of knockoutTies(phase)) {
     if (tie.terceiroLugar || tie.etapa?.codigo === "TERCEIRO_LUGAR") continue;
@@ -39,10 +40,10 @@ export default function LineBracket({ organization, phase, participants, editabl
   function controls(tie: KnockoutTie) {
     return tie.partidas.map((match, index) => {
       const round = phase.rodadas.find(round => round.partidas.some(item => item.id === match.id));
-      const playable = (editable && round?.status === "EM_ANDAMENTO") || (isAdmin && !!match.resultado);
+      const playable = !match.wo && ((editable && round?.status === "EM_ANDAMENTO") || (isAdmin && !!match.resultado));
       const video = match.youtubeUrl && validYoutubeUrl(match.youtubeUrl) ? match.youtubeUrl : null;
       return <span key={match.id} className={styles.actions}>
-        {tie.partidas.length > 1 && <small>{index === 0 ? "Ida" : "Volta"}</small>}
+        {match.wo && <small>W.O.</small>}{tie.partidas.length > 1 && <small>{index === 0 ? "Ida" : "Volta"}</small>}
         {playable && <button type="button" onClick={() => onSelect(match)} aria-label={`Editar partida ${match.id}`}>Placar</button>}
         {video && <a href={video} target="_blank" rel="noopener noreferrer">▶ Assistir partida</a>}
       </span>;
@@ -83,7 +84,7 @@ export default function LineBracket({ organization, phase, participants, editabl
     {layout.games.map(game => {
       const scores = lineBracketScores(game.tie, game.sides);
       const victorious = winner(game.tie);
-      return <div key={game.tie.id} className={styles.junction} data-right={game.right} style={{ left: game.x - 42, top: game.y - 30 }}>
+      return <div key={game.tie.id} data-motion-key={`junction-${game.tie.id}`} data-motion-value={JSON.stringify([game.sides.map(side => side?.id), scores, victorious?.id])} className={styles.junction} data-right={game.right} style={{ left: game.x - 42, top: game.y - 30 }}>
         <div className={styles.scores}>{scores.map((score, side) => <b key={side} title={game.tie.tipo === "IDA_E_VOLTA" ? "Ida · Volta (pênaltis entre parênteses)" : undefined} data-winner={!!game.sides[side] && victorious?.id === game.sides[side]?.id}>{score}</b>)}</div>
         <details className={styles.gameMenu}><summary aria-label={`Opções do confronto ${game.tie.id}`} title={game.tie.etapa?.nome || "Confronto"}>⋯</summary><div><button type="button" className={styles.closeMenu} aria-label="Fechar opções do confronto" onClick={event => {
           const menu = event.currentTarget.closest("details");
@@ -95,7 +96,7 @@ export default function LineBracket({ organization, phase, participants, editabl
       if (!tie) return null;
       const sides = index === 0 ? layout.finalSides : [participants.find(p => p.id === tie.participanteUmId) || null, participants.find(p => p.id === tie.participanteDoisId) || null];
       const legs = lineBracketLegs(tie, sides);
-      return <section key={tie.id} className={styles.final} style={{ left: layout.finalX, width: layout.finalWidth, top: layout.centerY - 76 + index * 200 }} aria-label={index === 0 ? "Final" : "Disputa de terceiro lugar"}>
+      return <section key={tie.id} data-motion-key={`final-${tie.id}`} data-motion-value={JSON.stringify([sides.map(side => side?.id), legs, winner(tie)?.id])} className={styles.final} style={{ left: layout.finalX, width: layout.finalWidth, top: layout.centerY - 76 + index * 200 }} aria-label={index === 0 ? "Final" : "Disputa de terceiro lugar"}>
         <h3 className={index === 0 ? styles.finalTitle : undefined}>{index === 0 ? "Final" : "Disputa de 3º lugar"}</h3>
         <div className={styles.finalMatch}>
           <div className={styles.finalTeams} style={{ gap: layout.scoreWidth * 2 + 24 }}>{sides.map((participant, side) => <div key={side} data-eliminated={!!participant && !!winner(tie) && winner(tie)?.id !== participant.id}>{participant && <Logo participant={participant} />}<strong>{name(participant)}</strong></div>)}</div>

@@ -3,21 +3,22 @@ import type { SchedulePhase } from "./championship-schedule";
 import { classificationRows } from "./provisional-standings";
 import { groupRounds } from "./group-rounds";
 
-export default function GroupStandings({ phase, rounds, roundNumber, complete, qualifiedIds }: { qualifiedIds?: number[]; phase: SchedulePhase; rounds: SchedulePhase["rodadas"]; roundNumber: number; complete: boolean }) {
+export default function GroupStandings({ live = false, phase, rounds, roundNumber, complete, qualifiedIds }: { live?: boolean; qualifiedIds?: number[]; phase: SchedulePhase; rounds: SchedulePhase["rodadas"]; roundNumber: number; complete: boolean }) {
+  const groupCount = phase.grupos?.length || phase.quantidadeGrupos || 2;
   const qualifiers = phase.quantidadeClassificados;
   return <div className="group-standings">
-    {qualifiers != null && <p className="form-note">{qualifiers} classificados no total: {Math.floor(qualifiers / 2)} por grupo{qualifiers % 2 ? " e uma vaga extra definida pela API entre os próximos colocados, considerando o desempenho" : ""}. O chaveamento é definido ao encerrar a fase.</p>}
+    {qualifiers != null && <p className="form-note">{qualifiers} classificados no total: {Math.floor(qualifiers / groupCount)} por grupo{qualifiers % groupCount ? ` e ${qualifiers % groupCount} vaga(s) extra(s) entre os próximos colocados, por pontos, vitórias, saldo e gols por jogo` : ""}. O admin solicita o chaveamento após encerrar a fase.</p>}
     {phase.grupos?.map(group => {
       const filteredRounds = groupRounds(rounds, group);
-      const official = group.classificacaoPorRodada?.find(classification => classification.rodada === roundNumber);
+      const official = live ? group.classificacaoAtual ?? undefined : group.classificacaoPorRodada?.find(classification => classification.rodada === roundNumber);
       const confirmed = complete && qualifiedIds != null;
       const qualification: Record<number, "qualified" | "extra"> = {};
       classificationRows(filteredRounds, group.participantes, official).forEach((row, index) => {
         if (confirmed) {
           if (qualifiedIds.includes(row.participant.id)) qualification[row.participant.id] = "qualified";
         } else if (qualifiers != null) {
-          if (index < Math.floor(qualifiers / 2)) qualification[row.participant.id] = "qualified";
-          else if (qualifiers % 2 && index === Math.floor(qualifiers / 2)) qualification[row.participant.id] = "extra";
+          if (index < Math.floor(qualifiers / groupCount)) qualification[row.participant.id] = "qualified";
+          else if (qualifiers % groupCount && index === Math.floor(qualifiers / groupCount)) qualification[row.participant.id] = "extra";
         }
       });
       return <section key={group.id} aria-label={`Classificação do ${group.nome}`}>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useLayoutTransition } from "../../components/use-layout-transition";
 import { knockoutTies } from "./knockout-ties";
 import { useRef, useState } from "react";
 import Image from "next/image";
@@ -12,7 +13,7 @@ import ChampionshipScorers from "./championship-scorers";
 import { topScorers } from "./provisional-standings";
 import MatchResultDialog from "./match-result-dialog";
 import styles from "./knockout-bracket.module.css";
-import { winner } from "./knockout-winner";
+import { winner as tieWinner } from "./knockout-winner";
 import LineBracket from "./line-bracket";
 import { lineBracketLayout } from "./line-bracket-layout";
 
@@ -36,8 +37,11 @@ function Logo({ participant }: { participant: Participant }) {
       else setFailed(url);
     }} /> : participant.equipe.nome.slice(0, 2).toUpperCase()}</span>;
 }
-export default function KnockoutBracket({ championship, onUpdated, embedded = false }: { embedded?: boolean; championship: Championship; onUpdated: (updated: Championship) => void }) {
-  const isAdmin = useAdminPermission();
+export default function KnockoutBracket({ championship, onUpdated, embedded = false, readOnly = false }: { readOnly?: boolean; embedded?: boolean; championship: Championship; onUpdated: (updated: Championship) => void }) {
+  const adminPermission = useAdminPermission(!readOnly);
+  const isAdmin = !readOnly && adminPermission;
+  const motion = useLayoutTransition(JSON.stringify([championship.fases, championship.participantesDesistentes]));
+  const winner = (tie?: KnockoutTie) => tieWinner(tie, championship.participantesDesistentes);
   const [twoSided, setTwoSided] = useState(false);
   const [layoutStyle, setLayoutStyle] = useState<"cards" | "lines">("cards");
   const [view, setView] = useState<"bracket" | "scorers">("bracket");
@@ -51,7 +55,10 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
   const allRounds = championship.fases?.flatMap(phase => phase.rodadas) || [];
   const final = championship.status === "FINALIZADO";
   const leaders = topScorers(allRounds, championship.participantes).filter(row => row.position === 1 && row.goalsFor > 0);
-  const editable = championship.status === "EM_ANDAMENTO";
+  const selectedTie = selected ? phases.flatMap(phase => knockoutTies(phase)).find(tie => tie.partidas.some(match => match.id === selected.id)) : undefined;
+  const decidingLeg = !!selectedTie && selectedTie.partidas.at(-1)?.id === selected?.id && selectedTie.partidas.length >= legCount(selectedTie);
+  const aggregateDifference = selected ? (selectedTie?.partidas.filter(match => match.id !== selected.id).reduce((sum, match) => sum + (match.resultado ? (match.mandante.id === selected.mandante.id ? 1 : -1) * (match.resultado.golsMandante - match.resultado.golsVisitante) : 0), 0) || 0) : 0;
+  const editable = !readOnly && championship.status === "EM_ANDAMENTO";
 
   async function downloadBracket(phaseId: number, width: number, height: number) {
     const bracket = brackets.current.get(phaseId);
@@ -109,11 +116,11 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
     }
   }
 
-  return <section aria-labelledby="knockout-title" className={styles.panel}>
+  return <section ref={motion} aria-labelledby="knockout-title" className={styles.panel}>
     {!embedded && <div className="schedule-view-options" role="group" aria-label="Visualização do campeonato"><button type="button" aria-pressed={view === "bracket"} onClick={() => setView("bracket")}>Mata a mata</button><button type="button" aria-pressed={view === "scorers"} onClick={() => setView("scorers")}>Artilheiro</button></div>}
     <header className={styles.heading}><div><p className="eyebrow">O CAMINHO ATÉ A TAÇA</p><h2 id="knockout-title">{view === "bracket" ? "Mata a mata" : "Artilheiro"}</h2><p>{view === "bracket" ? "Confira os confrontos de cada etapa até a final" : "Os jogadores que mais balançaram a rede"}</p></div><span className={styles.badge}>ELIMINATÓRIO</span></header>
     {view === "scorers" ? <ChampionshipScorers rounds={allRounds} participants={championship.participantes} final={final} /> : <>
-    <p className={styles.hint}>{editable ? "Selecione uma partida da etapa em andamento para registrar o placar. A próxima etapa é liberada ao concluir todos os jogos." : "Campeonato finalizado. Confira o caminho do campeão."} Arraste a barra horizontal para explorar o chaveamento.</p>
+    <p className={styles.hint}>{readOnly ? "Acompanhe os resultados e avanços ao vivo. Use as opções para escolher a visualização." : editable ? "Selecione uma partida da etapa em andamento para registrar o placar. A próxima etapa é liberada ao concluir todos os jogos." : "Campeonato finalizado. Confira o caminho do campeão."} Arraste a barra horizontal para explorar o chaveamento.</p>
     {phases.map(phase => {
       const rounds = [...phase.rodadas].sort((a,b) => a.numero-b.numero);
       const ties = knockoutTies(phase);
@@ -165,11 +172,11 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
         labels.set(tie.id, tie.etapa?.nome || "Disputa de terceiro lugar");
       }
       if (layoutStyle !== "cards") {
-        const lineLayout = lineBracketLayout(phase, championship.participantes, !!championship.organizacao.trofeuUrl, twoSided);
+        const lineLayout = lineBracketLayout(phase, championship.participantes, !!championship.organizacao.trofeuUrl, twoSided, championship.participantesDesistentes);
         width = lineLayout.width;
         height = lineLayout.height;
       }
-      const champion = !editable ? winner(finalTie) : null;
+      const champion = final ? winner(finalTie) : null;
       return <div key={phase.id}>
         {champion && <div className={styles.champion}><span aria-hidden="true">★</span><Logo participant={champion}/><div><small>CAMPEÃO DO CAMPEONATO</small><strong>{champion.jogador.apelido || champion.jogador.nome}</strong></div></div>}
         {champion && final && leaders.map(row => <div key={row.participant.id} className={`${styles.champion} ${styles.scorer}`}><span aria-hidden="true">⚽</span><Logo participant={row.participant}/><div><small>ARTILHEIRO DO CAMPEONATO</small><strong>{row.participant.jogador.apelido || row.participant.jogador.nome}</strong><span>{row.goalsFor} {row.goalsFor === 1 ? "gol" : "gols"}</span></div></div>)}
@@ -211,7 +218,7 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
             if (node) brackets.current.set(phase.id, node);
             else brackets.current.delete(phase.id);
           }}>
-          {layoutStyle !== "cards" ? <LineBracket twoSided={twoSided} organization={championship.organizacao} phase={phase} participants={championship.participantes} editable={editable} isAdmin={isAdmin} onSelect={setSelected} Logo={Logo} /> : <>
+          {layoutStyle !== "cards" ? <LineBracket withdrawn={championship.participantesDesistentes} twoSided={twoSided} organization={championship.organizacao} phase={phase} participants={championship.participantes} editable={editable} isAdmin={isAdmin} onSelect={setSelected} Logo={Logo} /> : <>
           <svg width={width} height={height} className={styles.lines} aria-hidden="true">{visibleTies.flatMap(tie=>[tie.origemUmId,tie.origemDoisId].map(id=> {
             if (id == null || !visibleIds.has(id)) return null;
             const parent = id == null ? undefined : positions.get(id); const child = positions.get(tie.id);
@@ -233,13 +240,13 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
               {(bronze || !group.slice(0,index).some(previous => visibleIds.has(previous.id) && positions.get(previous.id)?.x === point.x)) && <h3 className={styles.stage} style={{left:point.x,top:bronze ? point.y - 40 : 22}}>{bronze ? labels.get(tie.id) : tie.etapa?.nome || round?.etapa?.nome || (tie === finalTie ? "Final" : `Etapa ${stage+1}`)}</h3>}
               {Array.from({ length: legCount(tie) }, (_, leg) => {
                 const match = tie.partidas[leg];
-                const playable = !!match && ((editable && round?.status === "EM_ANDAMENTO") || (isAdmin && !!match.resultado));
+                const playable = !!match && !match.wo && ((editable && round?.status === "EM_ANDAMENTO") || (isAdmin && !!match.resultado));
                 const label = legCount(tie) === 1 ? labels.get(tie.id) : `${labels.get(tie.id)} · ${leg === 0 ? "Ida" : "Volta"}`;
                 const players = match ? [match.mandante.id, match.visitante.id] : leg === 0 ? sides : [...sides].reverse();
                 const video = match?.youtubeUrl && validYoutubeUrl(match.youtubeUrl) ? match.youtubeUrl : null;
-                return <div key={leg} className={styles.match} style={{left:point.x,top:point.y + leg * legSpacing}} data-final={tie === finalTie}>
+                return <div key={leg} data-motion-key={`match-${phase.id}-${tie.id}-${leg}`} data-motion-value={JSON.stringify([match?.mandante.id, match?.visitante.id, match?.resultado, victorious?.id])} className={styles.match} style={{left:point.x,top:point.y + leg * legSpacing}} data-final={tie === finalTie}>
                 <button type="button" className={styles.matchBody} disabled={!playable && !video} onClick={() => { if (video) window.open(video, "_blank", "noopener,noreferrer"); else if (playable) setSelected(match); }} aria-label={video ? `Assistir partida · ${label}` : playable ? `${label}: adicionar ou editar placar e vídeo` : undefined}>
-                <span className={styles.meta}><span>{label}</span><span>{match?.status === "FINALIZADA" ? "Finalizado" : playable ? "Em disputa" : "A definir"}</span></span>
+                <span className={styles.meta}><span>{label}</span><span>{match?.wo ? "W.O." : match?.status === "FINALIZADA" ? "Finalizado" : playable ? "Em disputa" : "A definir"}</span></span>
                 {players.map((id,side)=> {
                   const participant=championship.participantes.find(p=>p.id===id);
                   const origin=(side === leg) ? tie.origemUmId : tie.origemDoisId;
@@ -265,6 +272,6 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
       </div>;
     })}
     </>}
-    {selected && <MatchResultDialog key={selected.id} championshipId={championship.id} match={selected} knockout onClose={()=>setSelected(null)} onSaved={onUpdated}/>}
+    {selected && <MatchResultDialog key={selected.id} championshipId={championship.id} match={selected} knockout={decidingLeg} aggregateDifference={aggregateDifference} onClose={()=>setSelected(null)} onSaved={onUpdated}/>}
   </section>;
 }

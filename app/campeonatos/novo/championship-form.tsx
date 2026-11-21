@@ -12,7 +12,7 @@ type Player = { id: number; nome: string; apelido: string; ativo: boolean };
 type Team = { id: number; nome: string; ativo: boolean };
 type Entry = { jogadorId: number; equipeId: number };
 export type Participant = { id: number; ativo: boolean; jogador: { id: number; nome: string; apelido: string; ativo: boolean }; equipe: { id: number; nome: string; logoUrl?: string | null; ativo: boolean } };
-export type Championship = { classificacaoPorRodada?: OfficialClassification[]; fases?: SchedulePhase[]; status: string; id: number; edicao: number; organizacao: Organization; participantes: Participant[] };
+export type Championship = { classificacaoAtual?: OfficialClassification | null; participantesDesistentes?: number[]; aguardandoMataMata?: boolean; substituicoesMataMata?: Record<string, number>; classificacaoPorRodada?: OfficialClassification[]; fases?: SchedulePhase[]; status: string; id: number; edicao: number; organizacao: Organization; participantes: Participant[] };
 
 export default function ChampionshipForm({ initial, onSaved, onCancel }: { initial?: Championship; onSaved?: (championship: Championship) => void; onCancel?: () => void }) {
   const [organizationId, setOrganizationId] = useState(initial ? String(initial.organizacao.id) : "");
