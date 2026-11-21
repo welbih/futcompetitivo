@@ -1,6 +1,6 @@
 "use client";
 
-import { useAdminPermission } from "../../components/use-admin-permission";
+import { useAuthenticatedPermission } from "../../components/use-admin-permission";
 import { Fragment, useRef, useState } from "react";
 import Image from "next/image";
 import EncounterMatrix from "./encounter-matrix";
@@ -71,7 +71,7 @@ function completedActiveRound(phases: SchedulePhase[]) {
   return active && active.partidas.length > 0 && active.partidas.every((match) => match.status === "FINALIZADA") ? active.id : null;
 }
 export default function ChampionshipSchedule({ currentClassification, phases, participants, championshipId, editable, onUpdated, classifications, leagueStage = false, groupStage = false, qualifiedCount, groupQualifiedIds }: { currentClassification?: OfficialClassification; groupQualifiedIds?: number[]; groupStage?: boolean; leagueStage?: boolean; qualifiedCount?: number; phases: SchedulePhase[]; participants: Participant[]; championshipId: number; classifications?: OfficialClassification[]; editable: boolean; onUpdated: (championship: Championship) => void }) {
-  const isAdmin = useAdminPermission();
+  const authenticated = useAuthenticatedPermission();
   const [live, setLive] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<SchedulePhase["rodadas"][number]["partidas"][number] | null>(null);
   const [view, setView] = useState<"all" | "single" | "single-v2" | "single-v3">("single-v3");
@@ -108,7 +108,7 @@ export default function ChampionshipSchedule({ currentClassification, phases, pa
   const remainingGames = current?.round.partidas.filter((match) => match.status !== "FINALIZADA").length || 0;
   const visiblePhases = view === "all" ? ordered : current ? [{ ...current.phase, rodadas: [current.round] }] : [];
 
-  const canEditMatch = (match: SchedulePhase["rodadas"][number]["partidas"][number], round: SchedulePhase["rodadas"][number]) => !match.wo && ((isAdmin && match.status === "FINALIZADA" && !!match.resultado) || (view !== "all" && editable && round.status === "EM_ANDAMENTO"));
+  const canEditMatch = (match: SchedulePhase["rodadas"][number]["partidas"][number], round: SchedulePhase["rodadas"][number]) => !match.wo && ((authenticated && match.status === "FINALIZADA" && !!match.resultado) || (view !== "all" && editable && round.status === "EM_ANDAMENTO"));
   const selectedRound = selectedMatch ? rounds.find(entry => entry.round.partidas.some(match => match.id === selectedMatch.id))?.round : undefined;
   async function openStandings() {
     if (!current || nextRoundLock.current) return;
@@ -129,7 +129,7 @@ export default function ChampionshipSchedule({ currentClassification, phases, pa
     <div className="schedule-view-options"><button type="button" aria-pressed={live} onClick={() => setLive(value => !value)}>{live ? "Voltar às rodadas" : "Classificação atual"}</button></div>
     {live && (groupStage ? phases.map(phase => <GroupStandings key={phase.id} phase={phase} rounds={phase.rodadas.filter(round => round.status !== "PENDENTE")} roundNumber={Math.max(0, ...phase.rodadas.filter(round => round.status !== "PENDENTE").map(round => round.numero))} complete={!editable} qualifiedIds={groupQualifiedIds} live />) : <ChampionshipStandings rounds={phases.flatMap(phase => phase.rodadas.filter(round => round.status !== "PENDENTE"))} participants={participants} official={currentClassification} final={!editable && !leagueStage} league={!leagueStage} qualifiedCount={qualifiedCount} stageComplete={leagueStage && !editable} />)}
     <div hidden={live}>
-    {isAdmin && totalRounds > 0 && <div className="form-grid round-review"><div><label htmlFor={`review-round-${championshipId}`}>Revisar rodada</label><select id={`review-round-${championshipId}`} value={current?.round.id ?? ""} onChange={event => { const entry = rounds.find(item => item.round.id === Number(event.target.value)); if (!entry) return; setView("single-v3"); setHeldRoundId(entry.round.id); setStandingsRoundId(null); setScorersRoundId(null); setMatrixRoundId(null); setResultsRoundId(entry.round.status === "FINALIZADA" ? entry.round.id : null); }}>{rounds.map(({ phase, round }) => <option key={round.id} value={round.id}>{ordered.length > 1 ? `Fase ${phase.ordem} · ` : ""}Rodada {round.numero} — {roundStatus[round.status] || round.status}</option>)}</select><p className="form-note">Selecione uma rodada anterior e toque na partida para corrigir o placar. Resultados por W.O. não podem ser editados. Alterações que afetem um mata-mata já criado estão sujeitas às regras da API.</p></div></div>}
+    {authenticated && totalRounds > 0 && <div className="form-grid round-review"><div><label htmlFor={`review-round-${championshipId}`}>Revisar rodada</label><select id={`review-round-${championshipId}`} value={current?.round.id ?? ""} onChange={event => { const entry = rounds.find(item => item.round.id === Number(event.target.value)); if (!entry) return; setView("single-v3"); setHeldRoundId(entry.round.id); setStandingsRoundId(null); setScorersRoundId(null); setMatrixRoundId(null); setResultsRoundId(entry.round.status === "FINALIZADA" ? entry.round.id : null); }}>{rounds.map(({ phase, round }) => <option key={round.id} value={round.id}>{ordered.length > 1 ? `Fase ${phase.ordem} · ` : ""}Rodada {round.numero} — {roundStatus[round.status] || round.status}</option>)}</select><p className="form-note">Selecione uma rodada anterior e toque na partida para corrigir o placar. Resultados por W.O. não podem ser editados. Alterações que afetem um mata-mata já criado estão sujeitas às regras da API.</p></div></div>}
     {!leagueStage && !groupStage && <div className="schedule-controls">
       <div className="schedule-view-options" role="group" aria-label="Visualização da agenda">
         <button type="button" aria-pressed={view === "all"} onClick={() => setView("all")}>Todas as rodadas</button>
