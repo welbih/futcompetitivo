@@ -230,6 +230,31 @@ test("identification preserves raw numeric notation for strict backend validatio
   assert.equal(forwarded, raw);
 });
 
+test("withdrawal reversal is admin-only and uses the championship participant ID", async () => {
+  const file = "app/api/campeonatos/[id]/participantes/[participanteId]/desistencia/route.ts";
+  const { route, calls } = proxy(file);
+  assert.equal((await route.DELETE(request({}), context)).status, 200);
+  assert.equal(calls[0].action, "/participantes/42/desistencia");
+  assert.equal(calls[0].body, undefined);
+  assert.equal((await route.DELETE(request({}), { params: Promise.resolve({ id: "7", participanteId: "0" }) })).status, 400);
+  assert.equal(calls.length, 1);
+  const denied = proxy(file, true);
+  assert.equal((await denied.route.DELETE(request({}), context)).status, 403);
+  assert.equal(denied.calls.length, 0);
+});
+
+test("withdrawal reversal forwards DELETE and preserves dependency rejection", async () => {
+  let method;
+  const route = load("app/api/campeonatos/[id]/participantes/[participanteId]/desistencia/route.ts", {
+    "auth/admin": { requireAdmin: async () => null },
+    upstream: { championshipRequest: async (_id, init) => { method = init.method; return Response.json({ detail: "Etapa posterior já aberta." }, { status: 400 }); } },
+  });
+  const response = await route.DELETE(request({}), context);
+  assert.equal(method, "DELETE");
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).detail, "Etapa posterior já aberta.");
+});
+
 test("partial schedule enforces total games, membership, pairings and round conflicts", () => {
   const { validPartialSchedule: valid } = load("app/campeonatos/partial-schedule.ts");
   assert.equal(valid(schedule, 3, [1, 2, 3, 4]), true);

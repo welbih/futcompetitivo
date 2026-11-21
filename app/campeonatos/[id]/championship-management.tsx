@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAdminPermission } from "../../components/use-admin-permission";
 import type { Championship, Participant } from "../novo/championship-form";
 import ManualTies from "./manual-ties";
+import CancelWithdrawal from "./cancel-withdrawal";
 import { validManualTies, type ManualTie } from "../manual-ties";
 import styles from "./manual-groups.module.css";
 
@@ -47,7 +48,7 @@ export default function ChampionshipManagement({ championship, onUpdated }: { ch
     return () => controller.abort();
   }, [admin, waiting, championship, retry]);
   useEffect(() => { if (confirm) dialog.current?.showModal(); }, [confirm]);
-  if (championship.status !== "EM_ANDAMENTO" || (!admin && !waiting && !championship.participantesDesistentes?.length)) return null;
+  if ((championship.status !== "EM_ANDAMENTO" && !(admin && championship.status === "FINALIZADO" && championship.participantesDesistentes?.length)) || (!admin && !waiting && !championship.participantesDesistentes?.length)) return null;
   const withdrawn = championship.participantesDesistentes || [];
   const available = championship.participantes.filter(player => !withdrawn.includes(player.id));
   const valid = vacancies !== null && vacancies.every(vacancy => vacancy.candidatos.some(player => String(player.id) === choices[vacancy.desistenteId])) && new Set(Object.values(choices).filter(Boolean)).size === vacancies.length;
@@ -72,7 +73,8 @@ export default function ChampionshipManagement({ championship, onUpdated }: { ch
         <label htmlFor="qualifier-knockout-mode">Montagem da chave</label><select id="qualifier-knockout-mode" disabled={pending} value={knockoutMode} onChange={event => setKnockoutMode(event.target.value)}><option value="automatic">{generation === "ALEATORIA" ? "Usar sorteio aleatório configurado" : "Usar montagem por posições configurada"}</option><option value="manual">Definir confrontos manualmente</option></select>{knockoutMode === "manual" && (valid ? <ManualTies participants={eligible} value={manualTies} onChange={setManualTies} disabled={pending} /> : <p className="form-note">Preencha as vagas abertas antes de definir os confrontos.</p>)}
         <button type="button" className="form-submit" disabled={pending || !valid || !tiesValid} onClick={() => submit("/mata-mata", { ...(knockoutMode === "manual" ? { confrontosPrimeiraRodada: manualTies } : {}), substituicoes: vacancies.map(vacancy => ({ desistenteId: vacancy.desistenteId, substitutoId: Number(choices[vacancy.desistenteId]) })) })}>{pending ? "Processando…" : "Iniciar mata a mata"}</button>
       </>}</div>}
-      <details className={styles.panel}><summary>Registrar desistência</summary><p className="form-note">Apenas neste campeonato. Partidas disputadas são preservadas; as pendentes ficam em 3 × 0 para o adversário, ou 0 × 0 se ambos desistirem.</p><label htmlFor="withdraw-player">Participante</label><select id="withdraw-player" disabled={pending} value={selected} onChange={event => setSelected(event.target.value)}><option value="">Selecione um participante</option>{available.map(player => <option key={player.id} value={player.id}>{name(player)} — {player.equipe.nome}</option>)}</select><button type="button" className="retry-button" disabled={pending || !selected} onClick={() => setConfirm(available.find(player => String(player.id) === selected) || null)}>Registrar desistência</button></details>
+      {withdrawn.length > 0 && <CancelWithdrawal championship={championship} onUpdated={onUpdated} />}
+      {championship.status === "EM_ANDAMENTO" && <details className={styles.panel}><summary>Registrar desistência</summary><p className="form-note">Apenas neste campeonato. Partidas disputadas são preservadas; as pendentes ficam em 3 × 0 para o adversário, ou 0 × 0 se ambos desistirem.</p><label htmlFor="withdraw-player">Participante</label><select id="withdraw-player" disabled={pending} value={selected} onChange={event => setSelected(event.target.value)}><option value="">Selecione um participante</option>{available.map(player => <option key={player.id} value={player.id}>{name(player)} — {player.equipe.nome}</option>)}</select><button type="button" className="retry-button" disabled={pending || !selected} onClick={() => setConfirm(available.find(player => String(player.id) === selected) || null)}>Registrar desistência</button></details>}
       {error && !confirm && <p role="alert" className="form-error">{error}</p>}
       {confirm && <dialog ref={dialog} className="create-dialog" aria-labelledby="withdraw-title" onClose={() => { setConfirm(null); setError(""); }} onCancel={event => { if (pending) event.preventDefault(); }}><h2 id="withdraw-title">Confirmar desistência?</h2><p><strong>{name(confirm)}</strong> será marcado como desistente neste campeonato. Seus jogos pendentes terão resultado por W.O. Os resultados já disputados serão preservados.</p>{error && <p role="alert" className="form-error">{error}</p>}<div className="organization-dialog-actions"><button type="button" className="retry-button" disabled={pending} onClick={() => dialog.current?.close()}>Cancelar</button><button type="button" className="form-submit" disabled={pending} onClick={() => submit(`/participantes/${confirm.id}/desistir`)}>{pending ? "Registrando…" : "Confirmar desistência"}</button></div></dialog>}
     </>}
