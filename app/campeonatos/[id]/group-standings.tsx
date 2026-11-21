@@ -6,7 +6,7 @@ import type { SchedulePhase } from "./championship-schedule";
 import { classificationRows } from "./provisional-standings";
 import { groupRounds } from "./group-rounds";
 
-export default function GroupStandings({ live = false, phase, rounds, roundNumber, complete, qualifiedIds }: { live?: boolean; qualifiedIds?: number[]; phase: SchedulePhase; rounds: SchedulePhase["rodadas"]; roundNumber: number; complete: boolean }) {
+export default function GroupStandings({ withdrawn = [], live = false, phase, rounds, roundNumber, complete, qualifiedIds }: { withdrawn?: number[]; live?: boolean; qualifiedIds?: number[]; phase: SchedulePhase; rounds: SchedulePhase["rodadas"]; roundNumber: number; complete: boolean }) {
   const [selectedGroup, setSelectedGroup] = useState("");
   const selectedExists = phase.grupos?.some(group => String(group.id) === selectedGroup);
   const groupCount = phase.grupos?.length || phase.quantidadeGrupos || 2;
@@ -19,7 +19,7 @@ export default function GroupStandings({ live = false, phase, rounds, roundNumbe
       const official = live ? group.classificacaoAtual ?? undefined : group.classificacaoPorRodada?.find(classification => classification.rodada === roundNumber);
       const confirmed = complete && qualifiedIds != null;
       const qualification: Record<number, "qualified" | "extra"> = {};
-      classificationRows(filteredRounds, group.participantes, official).forEach((row, index) => {
+      classificationRows(filteredRounds, group.participantes, official).filter(row => !withdrawn.includes(row.participant.id)).forEach((row, index) => {
         if (confirmed) {
           if (qualifiedIds.includes(row.participant.id)) qualification[row.participant.id] = "qualified";
         } else if (qualifiers != null) {
@@ -29,7 +29,7 @@ export default function GroupStandings({ live = false, phase, rounds, roundNumbe
       });
       return <section key={group.id} aria-label={`Classificação do ${group.nome}`}>
         <h3 className="group-table-heading">{group.nome}</h3>
-        <ChampionshipStandings rounds={filteredRounds} participants={group.participantes} official={official} stageComplete={complete} stageName="Fase de grupos" qualificationByParticipant={qualification} qualificationConfirmed={confirmed} />
+        <ChampionshipStandings withdrawn={withdrawn} rounds={filteredRounds} participants={group.participantes} official={official} stageComplete={complete} stageName="Fase de grupos" qualificationByParticipant={qualification} qualificationConfirmed={confirmed} />
       </section>;
     })}
     {!phase.grupos?.length && <p className="form-note">Os grupos não foram informados pela API. Atualize o campeonato para carregar a classificação.</p>}

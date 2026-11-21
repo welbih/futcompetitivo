@@ -22,6 +22,9 @@
 .table tbody tr[data-qualification="extra"] .position, .table tbody tr[data-qualification="extra"] .qualificationLabel { color:#8ebeff; }
 .table tbody th .qualificationLabel { font-size:10px; font-weight:600; margin-top:6px; }
 .preliminaryKey { color:#8ebeff; }
+.table tbody tr[data-withdrawn=true] { background:#8b203d55; box-shadow:inset 4px 0 #ff6b87; animation:none; }
+.table tbody tr[data-withdrawn=true] > td,.table tbody tr[data-withdrawn=true] > th { background:#451c36; color:#ffc4cf; border-bottom-color:#ff6b8744; }
+.table tbody th .withdrawnLabel { display:block; margin-top:5px; color:#ff9fb3; font-size:11px; font-weight:700; }
 .table tbody tr[data-qualification="direct"] { background:#38c87516; box-shadow:inset 4px 0 #55d68a; }
 .table tbody tr[data-qualification="preliminary"] { background:#4b92f51c; box-shadow:inset 4px 0 #659ff5; }
 .table tbody tr[data-qualification="direct"] .position { color:#88e4ad; }
@@ -60,7 +63,7 @@
   .table thead th:nth-child(3) { z-index:2; background:#12206b; }
   .table tbody tr[data-qualification=qualified] > th,.table tbody tr[data-qualification=direct] > th { background:#123b43; }
   .table tbody tr[data-qualification=extra] > th,.table tbody tr[data-qualification=preliminary] > th { background:#153366; }
-  .table tbody tr.champion > th { background:#4a3b24; }
+  .table tbody tr.champion:not([data-withdrawn=true]) > th { background:#4a3b24; }
   .identity { gap:7px; }
   .identity > span:last-child { min-width:0; overflow-wrap:anywhere; line-height:1.5; }
   .logo { width:26px; height:30px; }
