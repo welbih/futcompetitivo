@@ -207,6 +207,29 @@ test("line bracket counts only knockout entrants, including byes, regardless of 
   assert.equal(knockoutParticipantCount({ rodadas: [] }, 16), 16);
 });
 
+test("identification PATCH is admin-only and forwards organization and edition without participants", async () => {
+  const file = "app/api/campeonatos/[id]/identificacao/route.ts";
+  const { route, calls } = proxy(file);
+  assert.equal((await route.PATCH(request({ organizacaoId: 3, edicao: 5 }), context)).status, 200);
+  assert.deepEqual(calls[0], { id: "7", action: "/identificacao", body: { organizacaoId: 3, edicao: 5 } });
+  for (const body of [{ organizacaoId: 0, edicao: 5 }, { organizacaoId: 3, edicao: 0 }, { organizacaoId: 3, edicao: 2147483648 }, { organizacaoId: 3, edicao: 1.5 }, { organizacaoId: 3, edicao: "5" }, { edicao: 5 }]) assert.equal((await route.PATCH(request(body), context)).status, 400);
+  assert.equal(calls.length, 1);
+  const denied = proxy(file, true);
+  assert.equal((await denied.route.PATCH(request({ organizacaoId: 3, edicao: 5 }), context)).status, 403);
+  assert.equal(denied.calls.length, 0);
+});
+
+test("identification preserves raw numeric notation for strict backend validation", async () => {
+  let forwarded;
+  const route = load("app/api/campeonatos/[id]/identificacao/route.ts", {
+    "auth/admin": { requireAdmin: async () => null },
+    upstream: { championshipRequest: async (_id, init) => { forwarded = init.body; return Response.json({}); } },
+  });
+  const raw = '{"organizacaoId":3,"edicao":5.0}';
+  await route.PATCH(new Request("http://localhost/api", { method: "PATCH", body: raw }), context);
+  assert.equal(forwarded, raw);
+});
+
 test("partial schedule enforces total games, membership, pairings and round conflicts", () => {
   const { validPartialSchedule: valid } = load("app/campeonatos/partial-schedule.ts");
   assert.equal(valid(schedule, 3, [1, 2, 3, 4]), true);
