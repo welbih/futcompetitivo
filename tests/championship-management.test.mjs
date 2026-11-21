@@ -173,6 +173,30 @@ const schedule = [
   { partidas: [{ mandanteId: 1, visitanteId: 4 }, { mandanteId: 2, visitanteId: 3 }] },
 ];
 
+test("schedule progress identifies completed, missing and excess games per participant", () => {
+  const { partialScheduleProgress: progress } = load("app/campeonatos/partial-schedule.ts");
+  assert.equal(progress(schedule, 3, [1, 2, 3, 4]).every(entry => entry.complete), true);
+  const partial = progress(schedule.slice(0, 2), 3, [1, 2, 3, 4, 5]);
+  assert.equal(partial[0].missing, 1);
+  assert.equal(partial[4].missing, 3);
+  assert.equal(partial[4].count, 0);
+  const extra = progress([...schedule, schedule[0]], 3, [1, 2, 3, 4]);
+  assert.equal(extra[0].extra, 1);
+  assert.equal(extra[0].issues.includes("Adversário repetido"), true);
+  assert.equal(extra[0].complete, false);
+  assert.equal(progress(schedule, 0, [1, 2, 3, 4]).some(entry => entry.complete), false);
+});
+
+test("schedule progress flags incomplete opponents and conflicts instead of marking complete", () => {
+  const { partialScheduleProgress: progress } = load("app/campeonatos/partial-schedule.ts");
+  const incomplete = progress([...schedule, { partidas: [{ mandanteId: 1, visitanteId: null }] }], 3, [1, 2, 3, 4]);
+  assert.equal(incomplete[0].count, 3);
+  assert.equal(incomplete[0].complete, false);
+  assert.equal(incomplete[0].issues.includes("Jogo com adversário pendente"), true);
+  const conflict = progress([{ partidas: [{ mandanteId: 1, visitanteId: 2 }, { mandanteId: 1, visitanteId: 3 }] }], 3, [1, 2, 3, 4]);
+  assert.equal(conflict[0].issues.includes("Mais de um jogo na mesma rodada"), true);
+});
+
 test("partial schedule enforces total games, membership, pairings and round conflicts", () => {
   const { validPartialSchedule: valid } = load("app/campeonatos/partial-schedule.ts");
   assert.equal(valid(schedule, 3, [1, 2, 3, 4]), true);

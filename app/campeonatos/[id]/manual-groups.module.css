@@ -1,6 +1,17 @@
 .panel { margin-top:24px; padding-top:20px; border-top:1px solid var(--line); }
 .panel h3 { font-size:23px; color:var(--gold-light); }
 .counts { color:var(--gold-light); font-size:13px; line-height:1.8; margin:18px 0; }
+.progress { margin:24px 0; }
+.progressList { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); gap:12px; padding:0; margin:0; list-style:none; }
+.progressList li { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:8px 12px; padding:16px; border:1px solid var(--line); border-radius:12px; background:var(--panel); }
+.progressList li > div { min-width:0; overflow-wrap:anywhere; }
+.progressList strong { font-size:14px; }
+.progressList small { display:block; color:var(--muted); margin-top:5px; font-size:11px; }
+.progressList li > p { grid-column:1/-1; margin:0; color:var(--muted); font-size:12px; line-height:1.7; }
+.progressBadge { font-size:11px; border:1px solid currentColor; border-radius:999px; padding:5px 9px; color:var(--gold-light); }
+.progressList li[data-state=complete] { border-color:#6ff0b555; }
+.progressList li[data-state=complete] .progressBadge { color:var(--cyan); }
+.progressList li[data-state=error] .progressBadge { color:var(--coral); }
 .players { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
 .player { display:grid; grid-template-columns:minmax(0,1fr) 130px; gap:12px; align-items:center; padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--panel); }
 .player label { min-width:0; margin:0; overflow-wrap:anywhere; }
