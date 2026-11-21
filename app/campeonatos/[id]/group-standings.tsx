@@ -1,14 +1,20 @@
+"use client";
+
+import { useState } from "react";
 import ChampionshipStandings from "./championship-standings";
 import type { SchedulePhase } from "./championship-schedule";
 import { classificationRows } from "./provisional-standings";
 import { groupRounds } from "./group-rounds";
 
 export default function GroupStandings({ live = false, phase, rounds, roundNumber, complete, qualifiedIds }: { live?: boolean; qualifiedIds?: number[]; phase: SchedulePhase; rounds: SchedulePhase["rodadas"]; roundNumber: number; complete: boolean }) {
+  const [selectedGroup, setSelectedGroup] = useState("");
+  const selectedExists = phase.grupos?.some(group => String(group.id) === selectedGroup);
   const groupCount = phase.grupos?.length || phase.quantidadeGrupos || 2;
   const qualifiers = phase.quantidadeClassificados;
   return <div className="group-standings">
+    {(phase.grupos?.length || 0) > 1 && <div className="group-filter"><label htmlFor={`standings-group-${phase.id}`}>Grupo exibido</label><select id={`standings-group-${phase.id}`} value={selectedExists ? selectedGroup : ""} onChange={event => setSelectedGroup(event.target.value)}><option value="">Todos os grupos</option>{phase.grupos?.map(group => <option key={group.id} value={group.id}>{group.nome}</option>)}</select></div>}
     {qualifiers != null && <p className="form-note">{qualifiers} classificados no total: {Math.floor(qualifiers / groupCount)} por grupo{qualifiers % groupCount ? ` e ${qualifiers % groupCount} vaga(s) extra(s) entre os próximos colocados, por pontos, vitórias, saldo e gols por jogo` : ""}. O admin solicita o chaveamento após encerrar a fase.</p>}
-    {phase.grupos?.map(group => {
+    {phase.grupos?.filter(group => !selectedExists || String(group.id) === selectedGroup).map(group => {
       const filteredRounds = groupRounds(rounds, group);
       const official = live ? group.classificacaoAtual ?? undefined : group.classificacaoPorRodada?.find(classification => classification.rodada === roundNumber);
       const confirmed = complete && qualifiedIds != null;

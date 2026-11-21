@@ -13,4 +13,11 @@
 .tables table { font-size:clamp(13px,1.1vw,19px); }
 .note,.empty { font-size:13px; color:var(--muted); line-height:1.8; margin-top:24px; }
 .empty { padding:32px 20px; border:1px solid var(--line); border-radius:16px; }
-@media(max-width:760px) { .page { padding-top:16px; } .header { gap:12px; margin-bottom:20px; } .header h1 { font-size:34px; } .tables :global(.group-standings) { gap:18px; } }
+@media(max-width:760px) {
+  .page { padding:16px 12px 32px; }
+  .header { gap:12px; margin-bottom:20px; }
+  .header h1 { font-size:clamp(28px,8vw,34px); }
+  .header .connection { max-width:100%; padding:8px 12px; border-radius:12px; }
+  .tables :global(.group-standings) { grid-template-columns:minmax(0,1fr); gap:18px; }
+  .tables table { font-size:12px; }
+}

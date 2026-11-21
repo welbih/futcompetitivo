@@ -305,7 +305,12 @@ footer { border-top: 1px solid var(--line); margin: 0 6%; padding: 30px 0; displ
 .score-fields { border: 0; margin: 25px 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr); gap: 14px; align-items: end; }
 .score-fields label { text-align: center; overflow-wrap: anywhere; }
 .group-match-heading { margin:0; padding:14px 18px; border-bottom:1px solid var(--line); background:#67e5ed0b; color:var(--cyan); font-size:12px; letter-spacing:1px; }
-.group-standings { display:grid; gap:24px; }
+.group-standings { display:grid; grid-template-columns:minmax(0,1fr); gap:24px; min-width:0; width:100%; }
+.group-standings > section { min-width:0; }
+.group-filter { grid-column:1/-1; display:grid; gap:8px; min-width:0; width:min(100%,360px); }
+.group-filter label { color:var(--gold-light); font-size:13px; }
+.group-filter select { width:100%; min-width:0; min-height:44px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--panel); color:var(--text); font-size:16px; }
+.group-filter select:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
 .group-table-heading { margin:0 0 12px; color:var(--gold); font-size:20px; }
 .penalty-score-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .penalty-score-fields > div { min-width: 0; }
