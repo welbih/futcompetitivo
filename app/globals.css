@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+.round-review { margin:20px 0; }
+.round-review label { display:block; margin-bottom:8px; color:var(--gold-light); font-size:13px; }
+.round-review select { width:100%; min-width:0; min-height:44px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--panel); color:var(--text); font-size:16px; }
+.round-review select:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+
 .arena-account { margin-top:24px; }
 .arena-account-button { width:100%; background:transparent; font:inherit; text-align:left; }
 .arena-account-button:disabled { opacity:.6; cursor:default; }
