@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutTransition } from "../../components/use-layout-transition";
-import { knockoutTies } from "./knockout-ties";
+import { knockoutParticipantCount, knockoutTies } from "./knockout-ties";
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { validYoutubeUrl } from "../../components/youtube-url";
@@ -193,8 +193,8 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
             <button type="button" aria-pressed={layoutStyle === "cards"} onClick={() => setLayoutStyle("cards")}>Cards</button>
             <button type="button" aria-pressed={layoutStyle === "lines"} onClick={() => setLayoutStyle("lines")}>Linhas</button>
           </div>
-          {layoutStyle === "lines" && championship.participantes.length <= 8 && <div className={styles.layoutOptions} role="group" aria-label="Distribuição do chaveamento">
-            <button type="button" aria-pressed={!twoSided} onClick={() => setTwoSided(false)}>Lado único</button>
+          {layoutStyle === "lines" && knockoutParticipantCount(phase, championship.participantes.length) <= 8 && <div className={styles.layoutOptions} role="group" aria-label="Distribuição do chaveamento">
+            <button type="button" aria-pressed={!twoSided} onClick={() => setTwoSided(false)}>Somente à esquerda</button>
             <button type="button" aria-pressed={twoSided} onClick={() => setTwoSided(true)}>Dois lados</button>
           </div>}
           <div className={styles.zoomControls} role="group" aria-label="Zoom do chaveamento">

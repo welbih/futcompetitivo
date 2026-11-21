@@ -1,4 +1,4 @@
-import { knockoutTies } from "./knockout-ties";
+import { knockoutParticipantCount, knockoutTies } from "./knockout-ties";
 import type { Participant } from "../novo/championship-form";
 import type { KnockoutTie, SchedulePhase } from "./championship-schedule";
 import { winner } from "./knockout-winner";
@@ -13,7 +13,7 @@ export function lineBracketLayout(phase: SchedulePhase, participants: Participan
   const final = main.find(tie => tie.etapa?.codigo === "FINAL") || main.at(-1);
   const bronze = ties.find(tie => tie.terceiroLugar || tie.etapa?.codigo === "TERCEIRO_LUGAR");
   const byId = new Map(ties.map(tie => [tie.id, tie]));
-  const split = participants.length > 8 || twoSided;
+  const split = knockoutParticipantCount(phase, participants.length) > 8 || twoSided;
   const scoreWidth = Math.max(64, ...ties.map(tie => {
     const count = Math.max(tie.partidas.length, tie.tipo === "IDA_E_VOLTA" ? 2 : 1);
     const characters = Array.from({ length: count }, (_, index) => {

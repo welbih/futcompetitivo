@@ -197,6 +197,16 @@ test("schedule progress flags incomplete opponents and conflicts instead of mark
   assert.equal(conflict[0].issues.includes("Mais de um jogo na mesma rodada"), true);
 });
 
+test("line bracket counts only knockout entrants, including byes, regardless of league size", () => {
+  const { knockoutParticipantCount } = load("app/campeonatos/[id]/knockout-ties.ts");
+  const tie = (one, two) => ({ participanteUmId: one, participanteDoisId: two, partidas: [] });
+  const phase = { rodadas: [], confrontos: [tie(1, 2), tie(3, 4), tie(5, 6), tie(7, 8), tie(1, 3), tie(5, 7), tie(1, 5)] };
+  assert.equal(knockoutParticipantCount(phase, 14), 8);
+  assert.equal(knockoutParticipantCount({ rodadas: [], confrontos: [tie(1, 2), tie(3, null), tie(4, null), tie(5, null)] }, 14), 5);
+  assert.equal(knockoutParticipantCount({ ...phase, confrontos: [...phase.confrontos, tie(9, 10)] }, 14), 10);
+  assert.equal(knockoutParticipantCount({ rodadas: [] }, 16), 16);
+});
+
 test("partial schedule enforces total games, membership, pairings and round conflicts", () => {
   const { validPartialSchedule: valid } = load("app/campeonatos/partial-schedule.ts");
   assert.equal(valid(schedule, 3, [1, 2, 3, 4]), true);

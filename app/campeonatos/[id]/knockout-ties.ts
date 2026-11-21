@@ -1,5 +1,14 @@
 import type { KnockoutTie, SchedulePhase } from "./championship-schedule";
 
+export function knockoutParticipantCount(phase: SchedulePhase, fallback = 0) {
+  const ids = new Set<number>();
+  for (const tie of knockoutTies(phase)) {
+    for (const id of [tie.participanteUmId, tie.participanteDoisId]) if (id != null) ids.add(id);
+    for (const match of tie.partidas) { ids.add(match.mandante.id); ids.add(match.visitante.id); }
+  }
+  return ids.size || fallback;
+}
+
 export function knockoutTies(phase: SchedulePhase): KnockoutTie[] {
   const matches = new Map(phase.rodadas.flatMap(round => round.partidas).map(match => [match.id, match]));
   return (phase.confrontos || []).map(tie => {
