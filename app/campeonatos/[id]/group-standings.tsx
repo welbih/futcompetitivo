@@ -29,7 +29,7 @@ export default function GroupStandings({ withdrawn = [], live = false, phase, ro
       });
       return <section key={group.id} aria-label={`Classificação do ${group.nome}`}>
         <h3 className="group-table-heading">{group.nome}</h3>
-        <ChampionshipStandings withdrawn={withdrawn} rounds={filteredRounds} participants={group.participantes} official={official} stageComplete={complete} stageName="Fase de grupos" qualificationByParticipant={qualification} qualificationConfirmed={confirmed} />
+        <ChampionshipStandings captureTitle={`${group.nome} — Classificação`} withdrawn={withdrawn} rounds={filteredRounds} participants={group.participantes} official={official} stageComplete={complete} stageName="Fase de grupos" qualificationByParticipant={qualification} qualificationConfirmed={confirmed} />
       </section>;
     })}
     {!phase.grupos?.length && <p className="form-note">Os grupos não foram informados pela API. Atualize o campeonato para carregar a classificação.</p>}

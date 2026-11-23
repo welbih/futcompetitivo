@@ -1,6 +1,7 @@
 "use client";
 
 import { useLayoutTransition } from "../../components/use-layout-transition";
+import { createBracketCaptureClone } from "./bracket-capture";
 import { knockoutParticipantCount, knockoutTies } from "./knockout-ties";
 import { useRef, useState } from "react";
 import Image from "next/image";
@@ -65,11 +66,18 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
     if (!bracket || exporting !== null) return;
     setExporting(phaseId);
     setExportError(null);
+    let captureHost: HTMLDivElement | undefined;
     try {
       const { toCanvas } = await import("html-to-image");
       const colors = getComputedStyle(bracket);
       const backgroundColor = colors.getPropertyValue("--panel").trim();
-      const bracketImage = await toCanvas(bracket, {
+      const captureClone = createBracketCaptureClone(bracket);
+      captureHost = document.createElement("div");
+      captureHost.setAttribute("aria-hidden", "true");
+      Object.assign(captureHost.style, { position: "fixed", left: "-100000px", top: "0", pointerEvents: "none" });
+      captureHost.appendChild(captureClone);
+      document.body.appendChild(captureHost);
+      const bracketImage = await toCanvas(captureClone, {
         width,
         height,
         pixelRatio: 2,
@@ -112,6 +120,7 @@ export default function KnockoutBracket({ championship, onUpdated, embedded = fa
     } catch {
       setExportError(phaseId);
     } finally {
+      captureHost?.remove();
       setExporting(null);
     }
   }

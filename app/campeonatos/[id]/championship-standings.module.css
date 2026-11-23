@@ -5,6 +5,9 @@
 .description, .note { padding: 16px 20px; margin: 0; color: #a9b8d0; font-size: 12px; line-height: 1.8; }
 .scroll { width:100%; max-width:100%; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-color:#f5c54288 #ffffff08; }
 .scrollHint { display:none; }
+.captureToolbar { display:flex; flex-wrap:wrap; padding:10px 12px; border-bottom:1px solid var(--line); }
+.captureButton { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:10px 14px; border:1px solid #f5c54255; border-radius:10px; background:var(--panel); color:var(--gold-light); font-size:12px; }
+.captureButton:disabled { opacity:.6; cursor:wait; }
 .table { width: 100%; border-collapse: collapse; font-family:'Inter',Arial,sans-serif; font-size: 13px; text-align: center; }
 .table th, .table td { padding: 15px 12px; border-bottom: 1px solid #ffffff12; white-space: nowrap; }
 .table thead th { background: #12206b; color: #bdc9df; font-size: 10px; font-weight: 600; letter-spacing: .5px; }
