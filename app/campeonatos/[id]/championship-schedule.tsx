@@ -1,4 +1,6 @@
 "use client";
+import { teamLogoSource } from "../../equipes/logo-sources";
+
 
 import { useAuthenticatedPermission } from "../../components/use-admin-permission";
 import { Fragment, useRef, useState } from "react";
@@ -53,7 +55,7 @@ function TeamLogo({ team }: { team: Participant["equipe"] }) {
   const url = team.logoUrl?.trim();
   const usable = !!url && (/^https?:\/\//i.test(url) || /^\/(?!\/)/.test(url));
   return <span className="team-logo" title={team.nome}>
-    {usable && failedUrl !== url ? <Image src={url} alt={`Logo de ${team.nome}`} width={44} height={44} unoptimized onError={() => setFailedUrl(url)} /> : <span className="team-logo-fallback" role="img" aria-label={`Equipe ${team.nome}, sem logo disponível`}>{team.nome.trim().slice(0, 2).toUpperCase()}</span>}
+    {usable && failedUrl !== url ? <Image src={teamLogoSource(url)} alt={`Logo de ${team.nome}`} width={44} height={44} unoptimized onError={() => setFailedUrl(url)} /> : <span className="team-logo-fallback" role="img" aria-label={`Equipe ${team.nome}, sem logo disponível`}>{team.nome.trim().slice(0, 2).toUpperCase()}</span>}
   </span>;
 }
 

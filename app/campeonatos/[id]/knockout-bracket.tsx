@@ -7,7 +7,7 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import { validYoutubeUrl } from "../../components/youtube-url";
 import { useAdminPermission } from "../../components/use-admin-permission";
-import { canOptimizeTeamLogo } from "../../equipes/logo-sources";
+import { canOptimizeTeamLogo, teamLogoSource } from "../../equipes/logo-sources";
 import type { Championship, Participant } from "../novo/championship-form";
 import type { KnockoutTie, SchedulePhase } from "./championship-schedule";
 import ChampionshipScorers from "./championship-scorers";
@@ -33,7 +33,7 @@ function Logo({ participant }: { participant: Participant }) {
   const [failedOptimization, setFailedOptimization] = useState<string | null>(null);
   const optimize = !!url && failedOptimization !== url && canOptimizeTeamLogo(url);
   return <span className={styles.logo}>{url && failed !== url && (/^https?:\/\//i.test(url) || /^\/(?!\/)/.test(url)) ?
-    <Image src={url} alt={participant.equipe.nome} width={28} height={28} unoptimized={!optimize} onError={() => {
+    <Image src={teamLogoSource(url)} alt={participant.equipe.nome} width={28} height={28} unoptimized={teamLogoSource(url) !== url || !optimize} onError={() => {
       if (optimize) setFailedOptimization(url);
       else setFailed(url);
     }} /> : participant.equipe.nome.slice(0, 2).toUpperCase()}</span>;

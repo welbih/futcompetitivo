@@ -1,4 +1,6 @@
 "use client";
+import { teamLogoSource } from "../../equipes/logo-sources";
+
 
 import { useLayoutTransition } from "../../components/use-layout-transition";
 import { useRef, useState } from "react";
@@ -13,7 +15,7 @@ function StandingLogo({ team }: { team: Participant["equipe"] }) {
   const [failed, setFailed] = useState<string | null>(null);
   const url = team.logoUrl?.trim();
   const valid = !!url && (/^https?:\/\//i.test(url) || /^\/(?!\/)/.test(url));
-  return <span className={styles.logo} title={team.nome}>{valid && failed !== url ? <Image src={url} alt={`Logo de ${team.nome}`} width={32} height={32} unoptimized onError={() => setFailed(url)} /> : <span role="img" aria-label={`Equipe ${team.nome}`}>{team.nome.slice(0, 2).toUpperCase()}</span>}</span>;
+  return <span className={styles.logo} title={team.nome}>{valid && failed !== url ? <Image src={teamLogoSource(url)} alt={`Logo de ${team.nome}`} width={32} height={32} unoptimized onError={() => setFailed(url)} /> : <span role="img" aria-label={`Equipe ${team.nome}`}>{team.nome.slice(0, 2).toUpperCase()}</span>}</span>;
 }
 export default function ChampionshipStandings({ captureTitle = "Tabela de classificação", withdrawn = [], rounds, participants, official, final = false, league = false, qualifiedCount, stageComplete = false, stageName = "Fase de liga", qualificationByParticipant, qualificationConfirmed = false }: { captureTitle?: string; withdrawn?: number[]; qualificationByParticipant?: Record<number, "qualified" | "extra">; qualificationConfirmed?: boolean; stageName?: string; qualifiedCount?: number; stageComplete?: boolean; rounds: SchedulePhase["rodadas"]; participants: Participant[]; official?: OfficialClassification; final?: boolean; league?: boolean }) {
   const capture = useRef<HTMLElement>(null);
